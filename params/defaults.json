@@ -1,0 +1,119 @@
+[
+  {
+    "ParameterKey": "KeyName",
+    "ParameterValue": "hybox-nw"
+  },
+  {
+    "ParameterKey": "S3Bucket",
+    "ParameterValue": "hybox-deployment-artifacts"
+  },
+  {
+    "ParameterKey": "S3BucketEB",
+    "ParameterValue": "temp-artifacts-bucket"
+  },
+  {
+    "ParameterKey": "S3KeyPrefix",
+    "ParameterValue": "current"
+  },
+  {
+    "ParameterKey": "WebappS3Key",
+    "ParameterValue": "hyku.zip"
+  },
+  {
+    "ParameterKey": "PublicZoneName",
+    "ParameterValue": "hydrainabox.org."
+  },
+  {
+    "ParameterKey": "WebappInstanceType",
+    "ParameterValue": "t2.large"
+  },
+  {
+    "ParameterKey": "WorkerInstanceType",
+    "ParameterValue": "t2.medium"
+  },
+  {
+    "ParameterKey": "FcrepoInstanceType",
+    "ParameterValue": "t2.large"
+  },
+  {
+    "ParameterKey": "SolrCloudInstanceType",
+    "ParameterValue": "t2.large"
+  },
+  {
+    "ParameterKey": "ZookeeperEnsembleInstanceType",
+    "ParameterValue": "t2.micro"
+  },
+  {
+    "ParameterKey": "RedisInstanceType",
+    "ParameterValue": "cache.m1.small"
+  },
+  {
+    "ParameterKey": "DatabaseInstanceType",
+    "ParameterValue": "db.t2.medium"
+  },
+  {
+    "ParameterKey": "WebappMinSize",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "WebappMaxSize",
+    "ParameterValue": "3"
+  },
+  {
+    "ParameterKey": "WorkerMinSize",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "WorkerMaxSize",
+    "ParameterValue": "2"
+  },
+  {
+    "ParameterKey": "SolrCloudSize",
+    "ParameterValue": "3"
+  },
+  {
+    "ParameterKey": "ZookeeperEnsembleSize",
+    "ParameterValue": "3"
+  },
+  {
+    "ParameterKey": "ContinuousDeployment",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "DatabaseUsername",
+    "ParameterValue": "ebroot"
+  },
+  {
+    "ParameterKey": "DatabasePassword",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "SecretKeyBase",
+    "ParameterValue": ""
+  },
+
+  {
+    "ParameterKey": "SSLCertificateId",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "SlackWebhookChannel",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "SlackWebhookToken",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "HoneybadgerApiKey",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "LogzioKey",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "GoogleAnalyticsId",
+    "ParameterValue": ""
+  }
+]
