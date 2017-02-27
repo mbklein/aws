@@ -5,8 +5,7 @@
   "Parameters" : {
     "StackName": {
       "Type": "String",
-      "Description": "Name of the ElasticBeanstalk environment",
-      "Default" : "HyboxApplication"
+      "Description": "Name of the ElasticBeanstalk environment"
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
