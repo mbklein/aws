@@ -299,6 +299,7 @@
           "WorkerMinSize" : { "Ref" : "WorkerMinSize" },
           "WorkerMaxSize" : { "Ref" : "WorkerMaxSize" },
           "SSLCertificateId" : { "Ref" : "SSLCertificateId" },
+          "ContinuousDeployment" : { "Ref" : "ContinuousDeployment" },
           "GoogleAnalyticsId" : { "Ref" : "GoogleAnalyticsId" },
           "HoneybadgerApiKey" : { "Ref" : "HoneybadgerApiKey" },
           "LogzioKey" : { "Ref" : "LogzioKey" }
