@@ -41,6 +41,21 @@
       "Type": "String",
       "Description": "Password for the DB Root User"
     },
+    "DatabaseName": {
+      "Type": "String",
+      "Description": "Name of the database",
+      "Default": "hybox"
+    },
+    "DatabaseStorageSize" : {
+      "Description" : "Size of DB in Gigs",
+      "Type" : "String",
+      "Default": "5"
+    },
+    "DatabaseMultiAZ" : {
+      "Description" : "Launch the database in multiple availability zones",
+      "Type" : "String",
+      "Default": "true"
+    },
     "SecretKeyBase" : {
       "NoEcho": "true",
       "Description" : "Secret key for Rails",
@@ -49,6 +64,21 @@
     "FcrepoInstanceType" : {
       "Type": "String",
       "Default" : "t2.large",
+      "Description": "Instance type to launch"
+    },
+    "S3FedoraFilename" : {
+      "Type": "String",
+      "Description": "Instance type to launch",
+      "Default": "fcrepo-webapp-4.7.1.war"
+    },
+    "FcrepoMinSize" : {
+      "Type": "String",
+      "Default" : "1",
+      "Description": "Instance type to launch"
+    },
+    "FcrepoMaxSize" : {
+      "Type": "String",
+      "Default" : "2",
       "Description": "Instance type to launch"
     },
     "SolrCloudSize" : {
@@ -61,6 +91,21 @@
       "Default" : "t2.large",
       "Description": "Instance type to launch"
     },
+    "SolrCloudMaxSize" : {
+      "Type": "Number",
+      "Default" : "6",
+      "Description": "Maximum number of instances that can be launched in your ECS cluster"
+    },
+    "SolrCloudDockerImage" : {
+      "Description" : "Docker image to run",
+      "Type" : "String",
+      "Default" : "hybox/solr-ecs:6"
+    },
+    "SolrCloudDataVolumePath" : {
+      "Type": "String",
+      "Description": "The path on the host container instance that is presented to the container",
+      "Default": "/var/lib/docker/vfs/dir/solr-data"
+    },
     "ZookeeperEnsembleSize" : {
       "Type": "Number",
       "Default" : "3",
@@ -70,6 +115,14 @@
       "Type": "String",
       "Default" : "t2.micro",
       "Description": "Instance type to launch"
+    },
+    "ZookeeperEnsembleMaxSize" : {
+      "Type": "String",
+      "Description": "Max number of zks"
+    },
+    "ZookeeperDockerImage" : {
+      "Type": "String",
+      "Description": "Docker Image for zks"
     },
     "WorkerInstanceType" : {
       "Type": "String",
@@ -101,10 +154,27 @@
       "Default" : "4",
       "Description": "Maximum number of instances to launch"
     },
+    "WebappHealthReportingSystemType": {
+      "Type": "String",
+      "Description": "Health reporting system",
+      "Default": "enhanced",
+      "AllowedValues" : [ "enhanced", "basic"]
+    },
+    "WorkerHealthReportingSystemType": {
+      "Type": "String",
+      "Description": "Health reporting system",
+      "Default": "enhanced",
+      "AllowedValues" : [ "enhanced", "basic"]
+    },
     "RedisInstanceType" : {
       "Type": "String",
       "Default" : "cache.m1.small",
       "Description": "Instance type to launch"
+    },
+    "BastionInstanceType" : {
+      "Description" : "The EC2 instance type",
+      "Type" : "String",
+      "Default" : "t2.nano"
     },
     "DatabaseInstanceType" : {
       "Type": "String",
@@ -126,6 +196,11 @@
       "Type": "String",
       "Description": "Configure continuous deployment for the webapp and workers?",
       "Default": "true"
+    },
+    "QueuePrefix": {
+      "Type": "String",
+      "Description": "SQS Queue prefix",
+      "Default": "hybox"
     },
     "SSLCertificateId": {
       "Type": "String",
@@ -203,6 +278,8 @@
           "LBSecurityGroups" : { "Fn::GetAtt" : [ "securitygroups", "Outputs.ZookeeperLb"] },
           "HostedZoneName" : { "Fn::GetAtt" : ["vpc", "Outputs.HostedZoneName"] },
           "DesiredCapacity" : { "Ref" : "ZookeeperEnsembleSize" },
+          "MaxSize" : { "Ref" : "ZookeeperEnsembleMaxSize" },
+          "DockerImage" : { "Ref" : "ZookeeperDockerImage" },
           "InstanceType" : { "Ref" : "ZookeeperEnsembleInstanceType" }
         },
         "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/zookeeper.json"]] }
@@ -218,6 +295,9 @@
           "SecurityGroups" : { "Fn::Join" : [",", [{ "Fn::GetAtt" : [ "securitygroups", "Outputs.Fcrepo"] }, { "Fn::GetAtt" : [ "securitygroups", "Outputs.Default"] }]] },
           "LBSecurityGroups" : { "Fn::GetAtt" : [ "securitygroups", "Outputs.FcrepoLb"] },
           "S3Bucket" : { "Ref" : "S3BucketEB" },
+          "S3Key" : { "Ref" : "S3FedoraFilename" },
+          "MinSize" : { "Ref" : "FcrepoMinSize" },
+          "MaxSize" : { "Ref" : "FcrepoMaxSize" },
           "HostedZoneName" : { "Fn::GetAtt" : ["vpc", "Outputs.HostedZoneName"] },
           "InstanceType" : { "Ref" : "FcrepoInstanceType" }
         },
@@ -236,6 +316,9 @@
           "LBSecurityGroups" : { "Fn::GetAtt" : [ "securitygroups", "Outputs.SolrLb"] },
           "ZookeeperHosts" : { "Fn::GetAtt" : ["zookeeper", "Outputs.EndpointAddress"] },
           "DesiredCapacity" : { "Ref" : "SolrCloudSize" },
+          "MaxSize" : { "Ref" : "SolrCloudMaxSize" },
+          "DockerImage" : { "Ref" : "SolrCloudDockerImage" },
+          "DataVolumePath" : { "Ref" : "SolrCloudDataVolumePath" },
           "InstanceType" : { "Ref" : "SolrCloudInstanceType" }
         },
         "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/solr.json"]] }
@@ -260,6 +343,9 @@
           "SecurityGroups" : { "Fn::GetAtt" : [ "securitygroups", "Outputs.Database"] },
           "MasterUsername" : { "Ref" : "DatabaseUsername" },
           "MasterUserPassword" : { "Ref" : "DatabasePassword" },
+          "DatabaseName" : { "Ref" : "DatabaseName" },
+          "AllocatedStorage" : { "Ref" : "DatabaseStorageSize" },
+          "MultiAZDatabase" : { "Ref" : "DatabaseMultiAZ" },
           "DBInstanceClass" : { "Ref" : "DatabaseInstanceType" }
         },
         "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/postgres.json"]] }
@@ -276,6 +362,7 @@
           "S3Key" : { "Ref" : "WebappS3Key" },
           "S3KeyPrefix" : { "Ref" : "S3KeyPrefix" },
           "BeanstalkSNSTopic" : { "Fn::GetAtt": ["slack", "Outputs.BeanstalkSNSTopic"] },
+          "QueuePrefix" : { "Ref" : "QueuePrefix" },
           "PrivateSubnets" : { "Fn::GetAtt" : ["vpc", "Outputs.PrivateSubnets"] },
           "PublicSubnets" : { "Fn::GetAtt" : ["vpc", "Outputs.PublicSubnets"] },
           "SecurityGroups" : { "Fn::Join" : [",", [{ "Fn::GetAtt" : [ "securitygroups", "Outputs.Webapp"] }, { "Fn::GetAtt" : [ "securitygroups", "Outputs.Default"] }]] },
@@ -298,6 +385,8 @@
           "WorkerInstanceType" : { "Ref" : "WorkerInstanceType" },
           "WorkerMinSize" : { "Ref" : "WorkerMinSize" },
           "WorkerMaxSize" : { "Ref" : "WorkerMaxSize" },
+          "WebappHealthReportingSystemType" : { "Ref" : "WebappHealthReportingSystemType" },
+          "WebappHealthReportingSystemType" : { "Ref" : "WebappHealthReportingSystemType" },
           "SSLCertificateId" : { "Ref" : "SSLCertificateId" },
           "ContinuousDeployment" : { "Ref" : "ContinuousDeployment" },
           "GoogleAnalyticsId" : { "Ref" : "GoogleAnalyticsId" },
@@ -314,6 +403,7 @@
           "StackName" : { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName"}, "bastion"]] },
           "KeyName" : { "Fn::Join" : [",", [{ "Ref" : "KeyName" }]] },
           "SubnetID" : { "Fn::GetAtt" : ["vpc", "Outputs.PublicSubnets"] },
+          "InstanceType" : { "Ref" : "BastionInstanceType" },
           "SecurityGroups" : { "Fn::GetAtt" : [ "securitygroups", "Outputs.Bastion"] }
         },
         "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/bastion.json"]] }

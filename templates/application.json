@@ -128,12 +128,6 @@
       "Description": "SQS Queue prefix",
       "Default": "hybox"
     },
-    "HealthReportingSystemType": {
-      "Type": "String",
-      "Description": "Health reporting system",
-      "Default": "enhanced",
-      "AllowedValues" : [ "enhanced", "basic"]
-    },
     "WebappInstanceType" : {
       "Description" : "The EC2 instance type",
       "Type" : "String",
@@ -155,6 +149,18 @@
 "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge", "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge",
 "hi1.4xlarge", "hs1.8xlarge", "cr1.8xlarge", "cc2.8xlarge"],
       "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+    "WebappHealthReportingSystemType": {
+      "Type": "String",
+      "Description": "Health reporting system",
+      "Default": "enhanced",
+      "AllowedValues" : [ "enhanced", "basic"]
+    },
+    "WorkerHealthReportingSystemType": {
+      "Type": "String",
+      "Description": "Health reporting system",
+      "Default": "enhanced",
+      "AllowedValues" : [ "enhanced", "basic"]
     },
     "BeanstalkSNSTopic": {
       "Type": "String",
@@ -237,6 +243,8 @@
           "QueuePrefix" : { "Ref" : "QueuePrefix" },
           "DefaultQueue" : { "Ref" : "DefaultQueue"},
           "BeanstalkSNSTopic" : { "Ref" : "BeanstalkSNSTopic"},
+          "InstanceType" : { "Ref" : "WebappInstanceType" },
+          "HealthReportingSystemType" : { "Ref" : "WebappHealthReportingSystemType" },
           "IamInstanceProfile" : { "Fn::GetAtt" : ["EC2InstanceProfile", "Arn"] },
           "UploadBucket" : { "Ref" : "UploadBucket" },
           "SSLCertificateId" : { "Ref" : "SSLCertificateId" },
@@ -278,6 +286,8 @@
           "DefaultQueueName" : { "Fn::GetAtt" : ["DefaultQueue", "QueueName"] },
           "BeanstalkSNSTopic" : { "Ref" : "BeanstalkSNSTopic"},
           "IamInstanceProfile" : { "Fn::GetAtt" : ["EC2InstanceProfile", "Arn"] },
+          "InstanceType" : { "Ref" : "WorkerInstanceType" },
+          "HealthReportingSystemType" : { "Ref" : "WorkerHealthReportingSystemType" },
           "UploadBucket" : { "Ref" : "UploadBucket" },
           "HoneybadgerApiKey" : { "Ref" : "HoneybadgerApiKey" },
           "LogzioKey" : { "Ref" : "LogzioKey" }
