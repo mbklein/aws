@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Hydra-in-a-Box postgresql database stack using RDS
+Parameters:
+  SubnetID:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: List of an existing subnet IDs to use for the load balancer and auto
+      scaling group
+  DatabaseName:
+    Type: String
+    Description: Name of the database
+    Default: hybox
+  MasterUsername:
+    Type: String
+    Description: Database Root Username
+    Default: ebroot
+  DBInstanceClass:
+    Type: String
+    Default: db.t2.medium
+    Description: Instance size
+  MasterUserPassword:
+    NoEcho: 'true'
+    Type: String
+    Description: Password for the DB Root User
+  SecurityGroups:
+    Type: CommaDelimitedList
+    Description: A list of security group ids, such as sg-a123fd85
+  AllocatedStorage:
+    Description: Size of DB in Gigs
+    Type: String
+    Default: '5'
+  MultiAZDatabase:
+    Description: Launch the database in multiple availability zones
+    Type: String
+    Default: 'true'
+Resources:
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref 'DatabaseName'
+      Engine: postgres
+      MasterUsername: !Ref 'MasterUsername'
+      MasterUserPassword: !Ref 'MasterUserPassword'
+      DBInstanceClass: !Ref 'DBInstanceClass'
+      DBSubnetGroupName: !Ref 'DBSubnetGroup'
+      VPCSecurityGroups: !Ref 'SecurityGroups'
+      AllocatedStorage: !Ref 'AllocatedStorage'
+      MultiAZ: !Ref 'MultiAZDatabase'
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: RDS Subnet Group
+      SubnetIds: !Ref 'SubnetID'
+Outputs:
+  EndpointAddress:
+    Description: Postgres endpoint address
+    Value: !GetAtt [DBInstance, Endpoint.Address]
+  EndpointPort:
+    Description: Postgres endpoint port
+    Value: !GetAtt [DBInstance, Endpoint.Port]
+  DatabaseName:
+    Description: Name of the database
+    Value: !Ref 'DatabaseName'

@@ -1,0 +1,367 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Hydra-in-a-Box (branch '{{branch}}'; revision '{{commit}}')
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances
+  S3Bucket:
+    Type: String
+    Description: S3 bucket to the cfn deployment artifacts
+    Default: hybox-deployment-artifacts
+  S3BucketEB:
+    Type: String
+    Description: S3 bucket to the eb deployment artifacts
+    Default: hybox-deployment-artifacts
+  S3KeyPrefix:
+    Description: S3 prefix to deployment artifacts
+    Type: String
+    Default: branch/{{branch}}
+  WebappS3Key:
+    Description: S3 key to webapp deployment artifacts
+    Type: String
+    Default: hyku/current/hyku.zip
+  PublicZoneName:
+    Description: Existing Route53 zone; used to create a public DNS record for the
+      web application
+    Type: String
+  DatabaseUsername:
+    Type: String
+    Description: Database Root Username
+    Default: root
+  DatabasePassword:
+    NoEcho: 'true'
+    Type: String
+    Description: Password for the DB Root User
+  DatabaseName:
+    Type: String
+    Description: Name of the database
+    Default: hybox
+  DatabaseStorageSize:
+    Description: Size of DB in Gigs
+    Type: String
+    Default: '5'
+  DatabaseMultiAZ:
+    Description: Launch the database in multiple availability zones
+    Type: String
+    Default: 'true'
+  SecretKeyBase:
+    NoEcho: 'true'
+    Description: Secret key for Rails
+    Type: String
+  FcrepoInstanceType:
+    Type: String
+    Default: t2.large
+    Description: Instance type to launch
+  S3FedoraFilename:
+    Type: String
+    Description: Instance type to launch
+    Default: fcrepo-webapp-4.7.1.war
+  FcrepoMinSize:
+    Type: String
+    Default: '1'
+    Description: Instance type to launch
+  FcrepoMaxSize:
+    Type: String
+    Default: '2'
+    Description: Instance type to launch
+  SolrCloudSize:
+    Type: Number
+    Default: '3'
+    Description: Number of instances to launch
+  SolrCloudInstanceType:
+    Type: String
+    Default: t2.large
+    Description: Instance type to launch
+  SolrCloudMaxSize:
+    Type: Number
+    Default: '6'
+    Description: Maximum number of instances that can be launched in your ECS cluster
+  SolrCloudDockerImage:
+    Description: Docker image to run
+    Type: String
+    Default: hybox/solr-ecs:6
+  SolrCloudDataVolumePath:
+    Type: String
+    Description: The path on the host container instance that is presented to the
+      container
+    Default: /var/lib/docker/vfs/dir/solr-data
+  ZookeeperEnsembleSize:
+    Type: Number
+    Default: '3'
+    Description: Number of instances to launch
+  ZookeeperEnsembleInstanceType:
+    Type: String
+    Default: t2.micro
+    Description: Instance type to launch
+  ZookeeperEnsembleMaxSize:
+    Type: String
+    Description: Max number of zks
+  ZookeeperDockerImage:
+    Type: String
+    Description: Docker Image for zks
+  WorkerInstanceType:
+    Type: String
+    Default: t2.medium
+    Description: Instance type to launch
+  WorkerMinSize:
+    Type: Number
+    Default: '1'
+    Description: Minimum number of instances to launch
+  WorkerMaxSize:
+    Type: Number
+    Default: '4'
+    Description: Maximum number of instances to launch
+  WebappInstanceType:
+    Type: String
+    Default: t2.large
+    Description: Instance type to launch
+  WebappMinSize:
+    Type: Number
+    Default: '1'
+    Description: Minimum number of instances to launch
+  WebappMaxSize:
+    Type: Number
+    Default: '4'
+    Description: Maximum number of instances to launch
+  WebappHealthReportingSystemType:
+    Type: String
+    Description: Health reporting system
+    Default: enhanced
+    AllowedValues: [enhanced, basic]
+  WorkerHealthReportingSystemType:
+    Type: String
+    Description: Health reporting system
+    Default: enhanced
+    AllowedValues: [enhanced, basic]
+  RedisInstanceType:
+    Type: String
+    Default: cache.m1.small
+    Description: Instance type to launch
+  BastionInstanceType:
+    Description: The EC2 instance type
+    Type: String
+    Default: t2.nano
+  DatabaseInstanceType:
+    Type: String
+    Default: db.t2.medium
+    Description: Instance type to launch
+  SlackWebhookToken:
+    Type: String
+    Description: Slack generated token for Incoming Webhook
+    Default: ''
+    NoEcho: 'true'
+  SlackWebhookChannel:
+    Type: String
+    Description: Slack channel for posting notifications
+    Default: ''
+  ContinuousDeployment:
+    Type: String
+    Description: Configure continuous deployment for the webapp and workers?
+    Default: 'true'
+  QueuePrefix:
+    Type: String
+    Description: SQS Queue prefix
+    Default: hybox
+  SSLCertificateId:
+    Type: String
+    Description: The Amazon Resource Name (ARN) of the SSL certificate
+    Default: ''
+  GoogleAnalyticsId:
+    Type: String
+    Description: The Google Analytics id, e.g UA-111111-1
+    Default: ''
+  HoneybadgerApiKey:
+    Type: String
+    Description: The api key for honeybadger.io
+    Default: ''
+  LogzioKey:
+    Type: String
+    Description: The logz.io key
+    Default: ''
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Deployment Artifacts
+      Parameters: [S3Bucket, S3KeyPrefix, WebappS3Key]
+    - Label:
+        default: Network Configuration
+      Parameters: [KeyName, PublicZoneName]
+    - Label:
+        default: Resources
+      Parameters: [WorkerInstanceType, WorkerMinSize, WorkerMaxSize, WebappInstanceType,
+        WebappMinSize, WebappMaxSize, DatabaseInstanceType, RedisInstanceType, FcrepoInstanceType,
+        SolrCloudSize, SolrCloudInstanceType, ZookeeperEnsembleSize, ZookeeperEnsembleInstanceType]
+    - Label:
+        default: Application Configuration
+      Parameters: [DatabaseUsername, DatabasePassword, SecretKeyBase, SSLCertificateId]
+Resources:
+  vpc:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Ref 'AWS::StackName'
+        KeyName: !Join [',', [!Ref 'KeyName']]
+        HostedZoneName: !Join [., [!Ref 'AWS::StackName', vpc, !Ref 'PublicZoneName']]
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/vpc.json]]
+  securitygroups:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Ref 'AWS::StackName'
+        VPC: !GetAtt [vpc, Outputs.VPCID]
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/securitygroups.json]]
+  zookeeper:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Join ['-', [!Ref 'AWS::StackName', zookeeper]]
+        KeyName: !Join [',', [!Ref 'KeyName']]
+        SubnetID: !GetAtt [vpc, Outputs.PrivateSubnets]
+        SecurityGroups: !Join [',', [!GetAtt [securitygroups, Outputs.Zookeeper],
+            !GetAtt [securitygroups, Outputs.Default]]]
+        LBSecurityGroups: !GetAtt [securitygroups, Outputs.ZookeeperLb]
+        HostedZoneName: !GetAtt [vpc, Outputs.HostedZoneName]
+        DesiredCapacity: !Ref 'ZookeeperEnsembleSize'
+        MaxSize: !Ref 'ZookeeperEnsembleMaxSize'
+        DockerImage: !Ref 'ZookeeperDockerImage'
+        InstanceType: !Ref 'ZookeeperEnsembleInstanceType'
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/zookeeper.json]]
+  fcrepo:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Join ['-', [!Ref 'AWS::StackName', fcrepo]]
+        KeyName: !Join [',', [!Ref 'KeyName']]
+        SubnetID: !GetAtt [vpc, Outputs.PrivateSubnets]
+        SecurityGroups: !Join [',', [!GetAtt [securitygroups, Outputs.Fcrepo], !GetAtt [
+              securitygroups, Outputs.Default]]]
+        LBSecurityGroups: !GetAtt [securitygroups, Outputs.FcrepoLb]
+        S3Bucket: !Ref 'S3BucketEB'
+        S3Key: !Ref 'S3FedoraFilename'
+        MinSize: !Ref 'FcrepoMinSize'
+        MaxSize: !Ref 'FcrepoMaxSize'
+        HostedZoneName: !GetAtt [vpc, Outputs.HostedZoneName]
+        InstanceType: !Ref 'FcrepoInstanceType'
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/fcrepo.json]]
+  solr:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Join ['-', [!Ref 'AWS::StackName', solr]]
+        KeyName: !Join [',', [!Ref 'KeyName']]
+        HostedZoneName: !GetAtt [vpc, Outputs.HostedZoneName]
+        SubnetID: !GetAtt [vpc, Outputs.PrivateSubnets]
+        SecurityGroups: !Join [',', [!GetAtt [securitygroups, Outputs.Solr], !GetAtt [
+              securitygroups, Outputs.Default]]]
+        LBSecurityGroups: !GetAtt [securitygroups, Outputs.SolrLb]
+        ZookeeperHosts: !GetAtt [zookeeper, Outputs.EndpointAddress]
+        DesiredCapacity: !Ref 'SolrCloudSize'
+        MaxSize: !Ref 'SolrCloudMaxSize'
+        DockerImage: !Ref 'SolrCloudDockerImage'
+        DataVolumePath: !Ref 'SolrCloudDataVolumePath'
+        InstanceType: !Ref 'SolrCloudInstanceType'
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/solr.json]]
+  redis:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        SubnetID: !GetAtt [vpc, Outputs.PrivateSubnets]
+        SecurityGroups: !GetAtt [securitygroups, Outputs.Redis]
+        InstanceType: !Ref 'RedisInstanceType'
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/redis.json]]
+  database:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        SubnetID: !GetAtt [vpc, Outputs.PrivateSubnets]
+        SecurityGroups: !GetAtt [securitygroups, Outputs.Database]
+        MasterUsername: !Ref 'DatabaseUsername'
+        MasterUserPassword: !Ref 'DatabasePassword'
+        DatabaseName: !Ref 'DatabaseName'
+        AllocatedStorage: !Ref 'DatabaseStorageSize'
+        MultiAZDatabase: !Ref 'DatabaseMultiAZ'
+        DBInstanceClass: !Ref 'DatabaseInstanceType'
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/postgres.json]]
+  application:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Ref 'AWS::StackName'
+        KeyName: !Join [',', [!Ref 'KeyName']]
+        S3Bucket: !Ref 'S3Bucket'
+        S3BucketEB: !Ref 'S3BucketEB'
+        S3Key: !Ref 'WebappS3Key'
+        S3KeyPrefix: !Ref 'S3KeyPrefix'
+        BeanstalkSNSTopic: !GetAtt [slack, Outputs.BeanstalkSNSTopic]
+        QueuePrefix: !Ref 'QueuePrefix'
+        PrivateSubnets: !GetAtt [vpc, Outputs.PrivateSubnets]
+        PublicSubnets: !GetAtt [vpc, Outputs.PublicSubnets]
+        SecurityGroups: !Join [',', [!GetAtt [securitygroups, Outputs.Webapp], !GetAtt [
+              securitygroups, Outputs.Default]]]
+        LBSecurityGroups: !GetAtt [securitygroups, Outputs.WebappLb]
+        HostedZoneName: !Ref 'PublicZoneName'
+        SecretKeyBase: !Ref 'SecretKeyBase'
+        FcrepoUrl: !GetAtt [fcrepo, Outputs.URL]
+        SolrUrl: !GetAtt [solr, Outputs.URL]
+        ZookeeperHosts: !Join ['', [!GetAtt [zookeeper, Outputs.EndpointAddress],
+            /configs]]
+        RedisHost: !GetAtt [redis, Outputs.EndpointAddress]
+        RedisPort: !GetAtt [redis, Outputs.EndpointPort]
+        RDSDatabaseName: !GetAtt [database, Outputs.DatabaseName]
+        RDSHostname: !GetAtt [database, Outputs.EndpointAddress]
+        RDSPort: !GetAtt [database, Outputs.EndpointPort]
+        RDSUsername: !Ref 'DatabaseUsername'
+        RDSPassword: !Ref 'DatabasePassword'
+        WebappInstanceType: !Ref 'WebappInstanceType'
+        WebappMinSize: !Ref 'WebappMinSize'
+        WebappMaxSize: !Ref 'WebappMaxSize'
+        WorkerInstanceType: !Ref 'WorkerInstanceType'
+        WorkerMinSize: !Ref 'WorkerMinSize'
+        WorkerMaxSize: !Ref 'WorkerMaxSize'
+        WebappHealthReportingSystemType: !Ref 'WebappHealthReportingSystemType'
+        SSLCertificateId: !Ref 'SSLCertificateId'
+        ContinuousDeployment: !Ref 'ContinuousDeployment'
+        GoogleAnalyticsId: !Ref 'GoogleAnalyticsId'
+        HoneybadgerApiKey: !Ref 'HoneybadgerApiKey'
+        LogzioKey: !Ref 'LogzioKey'
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/application.json]]
+  bastion:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Join ['-', [!Ref 'AWS::StackName', bastion]]
+        KeyName: !Join [',', [!Ref 'KeyName']]
+        SubnetID: !GetAtt [vpc, Outputs.PublicSubnets]
+        InstanceType: !Ref 'BastionInstanceType'
+        SecurityGroups: !GetAtt [securitygroups, Outputs.Bastion]
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/bastion.json]]
+  slack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        SlackWebhookToken: !Ref 'SlackWebhookToken'
+        SlackWebhookChannel: !Ref 'SlackWebhookChannel'
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/slack.json]]
+  mail:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        Domain: !Join [., [!Ref 'AWS::StackName', !Ref 'PublicZoneName']]
+        HostedZoneName: !Ref 'PublicZoneName'
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
+          !Ref 'S3KeyPrefix', /templates/mail.json]]
+Outputs:
+  URL:
+    Description: URL for the deployed application
+    Value: !GetAtt [application, Outputs.URL]
