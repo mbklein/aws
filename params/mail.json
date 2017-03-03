@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "HostedZoneName",
+    "ParameterValue": "hydrainabox.org."
+  },
+  {
+    "ParameterKey": "Domain",
+    "ParameterValue": "mailtest.hydrainabox.org."
+  }
+]
