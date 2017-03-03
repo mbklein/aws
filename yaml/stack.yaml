@@ -1,29 +1,34 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Hydra-in-a-Box (branch '{{branch}}'; revision '{{commit}}')
+Description: Hyku (branch '{{branch}}'; revision '{{commit}}')
 Parameters:
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances
-  S3Bucket:
+  TemplatesS3Bucket:
     Type: String
-    Description: S3 bucket to the cfn deployment artifacts
+    Description: S3 bucket containing cloudformation templates
     Default: hybox-deployment-artifacts
-  S3BucketEB:
+  TemplatesPath:
     Type: String
-    Description: S3 bucket to the eb deployment artifacts
+    Description: Branch name of cloudformation templates to deploy
+    Default: cloudformation/branch
+  TemplatesBranch:
+    Type: String
+    Description: Branch name of cloudformation templates to deploy
+    Default: {{branch}}
+  ArtifactsS3Bucket:
+    Type: String
+    Description: S3 bucket containing elastic beanstalk deployment artifacts
     Default: hybox-deployment-artifacts
-  S3KeyPrefix:
-    Description: S3 prefix to deployment artifacts
+  PublicZoneName:
     Type: String
-    Default: branch/{{branch}}
+    Description: Existing Route53 zone; used to create a public DNS record for the
+      web application
+    Default: hydrainabox.org.
   WebappS3Key:
     Description: S3 key to webapp deployment artifacts
     Type: String
     Default: hyku/current/hyku.zip
-  PublicZoneName:
-    Description: Existing Route53 zone; used to create a public DNS record for the
-      web application
-    Type: String
   DatabaseUsername:
     Type: String
     Description: Database Root Username
@@ -178,23 +183,6 @@ Parameters:
     Type: String
     Description: The logz.io key
     Default: ''
-Metadata:
-  AWS::CloudFormation::Interface:
-    ParameterGroups:
-    - Label:
-        default: Deployment Artifacts
-      Parameters: [S3Bucket, S3KeyPrefix, WebappS3Key]
-    - Label:
-        default: Network Configuration
-      Parameters: [KeyName, PublicZoneName]
-    - Label:
-        default: Resources
-      Parameters: [WorkerInstanceType, WorkerMinSize, WorkerMaxSize, WebappInstanceType,
-        WebappMinSize, WebappMaxSize, DatabaseInstanceType, RedisInstanceType, FcrepoInstanceType,
-        SolrCloudSize, SolrCloudInstanceType, ZookeeperEnsembleSize, ZookeeperEnsembleInstanceType]
-    - Label:
-        default: Application Configuration
-      Parameters: [DatabaseUsername, DatabasePassword, SecretKeyBase, SSLCertificateId]
 Resources:
   vpc:
     Type: AWS::CloudFormation::Stack
@@ -351,16 +339,16 @@ Resources:
       Parameters:
         SlackWebhookToken: !Ref 'SlackWebhookToken'
         SlackWebhookChannel: !Ref 'SlackWebhookChannel'
-      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
-          !Ref 'S3KeyPrefix', /templates/slack.json]]
+      TemplateURL: !Join ['/', ['https://s3.amazonaws.com/', !Ref 'TemplatesS3Bucket',
+          !Ref 'TemplatesPath', !Ref 'TemplatesBranch', templates/slack.json]]
   mail:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
         Domain: !Join [., [!Ref 'AWS::StackName', !Ref 'PublicZoneName']]
         HostedZoneName: !Ref 'PublicZoneName'
-      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref 'S3Bucket', /cloudformation/,
-          !Ref 'S3KeyPrefix', /templates/mail.json]]
+      TemplateURL: !Join ['/', ['https://s3.amazonaws.com', !Ref 'TemplatesS3Bucket',
+          !Ref 'TemplatesPath', !Ref 'TemplatesBranch', templates/mail.json]]
 Outputs:
   URL:
     Description: URL for the deployed application
