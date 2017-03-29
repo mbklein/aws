@@ -208,6 +208,19 @@
     "LogzioKey": {
       "Type": "String",
       "Description": "The logz.io key"
+    },
+    "VpnFqdn": {
+      "Description" : "The fully-qualified hostname for the VPN server",
+      "Type" : "String"
+    },
+    "VpnUser" : {
+      "Description" : "The username for the VPN user",
+      "Type" : "String"
+    },
+    "VpnPassword" : {
+      "Type" : "String",
+      "Description" : "The password for the VPN user",
+      "NoEcho" : "true"
     }
   },
   "Metadata" : {
@@ -232,6 +245,10 @@
         {
           "Label" : { "default" : "Application Configuration" },
           "Parameters" : [ "DatabaseUsername", "DatabasePassword", "SecretKeyBase", "SSLCertificateId" ]
+        },
+        {
+          "Label" : { "default" : "OpenVPN Configuration" },
+          "Parameters" : [ "VpnFqdn", "VpnUser", "VpnPassword" ]
         }
       ]
     }
@@ -440,12 +457,42 @@
         },
         "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/mail.json"]] }
       }
+    },
+    "openvpn" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Properties" : {
+        "Parameters" : {
+          "StackName" : { "Fn::Join": ["-", [{ "Ref" : "AWS::StackName"}, "openvpn"]] },
+          "KeyName" : { "Fn::Join" : [",", [{ "Ref" : "KeyName" }]] },
+          "SubnetID" : { "Fn::Select" : [ "0", { "Fn::Split": [",", { "Fn::GetAtt" : ["vpc", "Outputs.PublicSubnets"] }]}] },
+          "SecurityGroups" : { "Fn::Join" : [",", [{ "Fn::GetAtt" : [ "securitygroups", "Outputs.Bastion"] }, { "Fn::GetAtt" : [ "securitygroups", "Outputs.OpenVPN"] }]] },
+          "HostedZoneName" : { "Fn::Join": [ ".", [ { "Ref": "AWS::StackName" }, { "Ref": "PublicZoneName" } ] ] },
+          "VpnFqdn" : { "Ref" : "VpnFqdn" },
+          "VpnUser" : { "Ref" : "VpnUser" },
+          "VpnPassword" : { "Ref" : "VpnPassword" }
+        },
+        "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/openvpn.json"]] }
+      }
+    },
+    "publicdns" : {
+      "Type" : "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters" : {
+          "SubZone" : { "Ref" : "AWS::StackName"},
+          "PublicZoneName" : { "Ref" : "PublicZoneName" }
+        },
+        "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/publicdns.json"]] }
+      }
     }
   },
   "Outputs": {
     "URL" : {
       "Description" : "URL for the deployed application",
       "Value" : { "Fn::GetAtt" : ["application", "Outputs.URL"] }
+    },
+    "VPN" : {
+      "Description" : "URL for the OpenVPN server",
+      "Value" : { "Fn::GetAtt" : ["openvpn", "Outputs.URL"] }
     }
   }
 }

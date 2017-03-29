@@ -1,0 +1,33 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description": "Hydra-in-a-Box public subzone and NS records",
+
+  "Parameters" : {
+    "SubZone" : {
+      "Description" : "Name for the new public subzone",
+      "Type" : "String"
+    },
+    "PublicZoneName" : {
+      "Description" : "Existing Route53 zone; used to create a public NS record for the new public subzone",
+      "Type" : "String"
+    }
+  },
+  "Resources" : {
+    "PublicDNS" : {
+      "Type": "AWS::Route53::HostedZone",
+      "Properties": {
+        "Name": { "Fn::Join" : [".", [{ "Ref" : "SubZone"}, { "Ref" : "PublicZoneName" }]] }
+      }
+    },
+    "PublicDNSNameServers" : {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties" : {
+        "Name" : { "Fn::Join" : [".", [{ "Ref" : "SubZone"}, { "Ref" : "PublicZoneName" }]] },
+        "HostedZoneName" : { "Ref" : "PublicZoneName"},
+        "Type" : "NS",
+        "TTL": "900",
+        "ResourceRecords" : { "Fn::GetAtt" : ["PublicDNS", "NameServers"] }
+      }
+    }
+  }
+}
