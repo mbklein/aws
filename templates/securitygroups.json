@@ -235,6 +235,34 @@
         "FromPort" : "0",
         "ToPort" : "65535"
       }
+    },
+    "OpenVPNSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+         "GroupDescription" : "OpenVPN security group",
+         "VpcId" : { "Ref" : "VPC" },
+         "SecurityGroupIngress" : [
+           {
+             "CidrIp": "0.0.0.0/0",
+             "IpProtocol": "tcp",
+             "FromPort" : "443",
+             "ToPort" : "443"
+           },
+           {
+             "CidrIp": "0.0.0.0/0",
+             "IpProtocol": "tcp",
+             "FromPort" : "943",
+             "ToPort" : "943"
+           },
+           {
+             "CidrIp": "0.0.0.0/0",
+             "IpProtocol": "udp",
+             "FromPort" : "1194",
+             "ToPort" : "1194"
+           }
+         ],
+         "Tags" : [ { "Key" : "Name", "Value" : { "Fn::Join" : ["-", [{ "Ref" : "StackName" }, "openvpn"] ] } } ]
+      }
     }
   },
   "Outputs" : {
@@ -289,6 +317,10 @@
     "Redis" : {
       "Description": "Security Group ID for the redis security group",
       "Value": { "Ref" : "RedisSecurityGroup" }
+    },
+    "OpenVPN" : {
+      "Description": "Security Group ID for the openvpn security group",
+      "Value": { "Ref" : "OpenVPNSecurityGroup" }
     }
   }
 }
