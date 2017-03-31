@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-  "Description" : "Hydra-in-a-Box fcrepo stack",
+  "Description" : "Hydra fcrepo stack",
 
   "Parameters" : {
     "StackName": {
@@ -67,13 +67,25 @@
     "RDSPort": {
       "Type": "String",
       "Description": "Database Port"
+    },
+    "BinaryBucket": {
+      "Type": "String",
+      "Description": "S3 Bucket for Fedora's binary object store"
+    },
+    "BinaryBucketKey": {
+      "Type": "String",
+      "Description": "AWS Access Key ID for binary object store"
+    },
+    "BinaryBucketSecret": {
+      "Type": "String",
+      "Description": "AWS Secret Key for binary object store"
     }
   },
   "Resources" : {
     "FcrepoApplication" : {
       "Type" : "AWS::ElasticBeanstalk::Application",
       "Properties" : {
-        "ApplicationName" : { "Ref" : "StackName"},
+        "ApplicationName" : { "Ref" : "StackName" },
         "Description" : "Fcrepo service"
       }
     },
@@ -193,7 +205,10 @@
                 " -Dfcrepo.postgresql.port=\"", { "Ref" : "RDSPort" }, "\"",
                 " -Dfcrepo.postgresql.username=\"", { "Ref" : "RDSUsername" }, "\"",
                 " -Dfcrepo.postgresql.password=\"", { "Ref" : "RDSPassword" }, "\"",
-                " -Dfcrepo.modeshape.configuration=\"classpath:/config/jdbc-postgresql/repository.json\""
+                " -Daws.accessKeyId=\"", { "Ref" : "BinaryBucketKey" }, "\"",
+                " -Daws.secretKey=\"", { "Ref" : "BinaryBucketSecret" }, "\"",
+                " -Daws.bucket=\"", { "Ref" : "BinaryBucket" }, "\"",
+                " -Dfcrepo.modeshape.configuration=\"classpath:/config/jdbc-postgresql-s3/repository.json\""
               ]]}
           },
           {
@@ -207,7 +222,7 @@
             "Value": "HTTP"
           }
         ],
-        "SolutionStackName" : "64bit Amazon Linux 2016.03 v2.2.0 running Tomcat 8 Java 8"
+        "SolutionStackName" : "64bit Amazon Linux 2016.09 v2.5.3 running Tomcat 8 Java 8"
       }
     },
     "FcrepoEnvironment": {
@@ -267,15 +282,9 @@
   "Outputs": {
     "URL": {
       "Description": "URL of the AWS Elastic Beanstalk Environment",
-      "Value": {
-        "Fn::Join": [
-          "",
-          [
-            "http://",
-            { "Ref" : "EBRecordSet" },
-            "/rest"
-          ]
-        ]
+      "Value": { "Fn::Sub": "http://${EBRecordSet}/rest" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"fcrepo","URL"]] }
       }
     }
   }

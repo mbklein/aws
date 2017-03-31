@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-  "Description" : "Hydra-in-a-Box SolrCloud stack using ECS",
+  "Description" : "Hydra SolrCloud stack using ECS",
 
   "Parameters" : {
     "StackName": {
@@ -328,16 +328,10 @@
 
   "Outputs" : {
     "URL" : {
-      "Value": {
-         "Fn::Join": [
-           "",
-           [
-            "http://",
-             { "Ref" : "ECSRecordSet" },
-            "/solr/"
-           ]
-         ]
-       }
+      "Value": { "Fn::Sub" : "http://${ECSRecordSet}/solr/" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"solr","URL"]] }
+      }
     }
   }
 }

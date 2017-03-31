@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-  "Description": "Hydra-in-a-Box public subzone and NS records",
+  "Description": "Hydra public subzone and NS records",
 
   "Parameters" : {
     "SubZone" : {
@@ -27,6 +27,15 @@
         "Type" : "NS",
         "TTL": "900",
         "ResourceRecords" : { "Fn::GetAtt" : ["PublicDNS", "NameServers"] }
+      }
+    }
+  },
+  "Outputs": {
+    "PublicZoneName" : {
+      "Description" : "Name of the public subzone",
+      "Value" : { "Fn::Join" : [".", [{ "Ref" : "SubZone"}, { "Ref" : "PublicZoneName" }]] },
+      "Export" : {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "SubZone" },"dns","PublicZoneName"]] }
       }
     }
   }

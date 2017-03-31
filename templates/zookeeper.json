@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-  "Description" : "Hydra-in-a-Box Zookeeper stack for SolrCloud using ECS",
+  "Description" : "Hydra Zookeeper stack for SolrCloud using ECS",
 
   "Parameters" : {
     "StackName": {
@@ -351,16 +351,10 @@
        }
     },
     "ui" : {
-      "Value": {
-         "Fn::Join": [
-           "",
-           [
-            "http://",
-             { "Ref" : "ECSRecordSet" },
-            "/exhibitor/v1/ui/index.html"
-           ]
-         ]
-       }
+      "Value": { "Fn::Sub" : "http://${ECSRecordSet}/exhibitor/v1/ui/index.html" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"zookeeper","ui"]] }
+      }
     }
   }
 }

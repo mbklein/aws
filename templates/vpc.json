@@ -1,11 +1,11 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-  "Description" : "Hydra-in-a-Box VPC and networking stack",
+  "Description" : "Hydra VPC and networking stack",
 
   "Parameters" : {
     "StackName": {
       "Type": "String",
-      "Description": "Name of the ElasticBeanstalk environment"
+      "Description": "Name of the CloudFormation stack"
     },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
@@ -221,19 +221,34 @@
 
   "Outputs" : {
     "VPCID" : {
-      "Value" : { "Ref" : "VPC" }
+      "Value" : { "Ref" : "VPC" },
+      "Export" : {
+        "Name": { "Fn::Join" : ["-", [ { "Ref" : "StackName" },"vpc","VPCID" ]] }
+      }
     },
     "DefaultSecurityGroup" : {
-      "Value" : { "Fn::GetAtt" : [ "VPC", "DefaultSecurityGroup" ] }
+      "Value" : { "Fn::GetAtt" : [ "VPC", "DefaultSecurityGroup" ] },
+      "Export" : {
+        "Name": { "Fn::Join" : ["-", [ { "Ref" : "StackName" },"vpc","DefaultSecurityGroup" ]] }
+      }
     },
     "PrivateSubnets" : {
-      "Value" : { "Fn::Join": [",", [{ "Ref" : "PrivateSubnetA" }, { "Ref" : "PrivateSubnetB" }, { "Ref" : "PrivateSubnetC" }]] }
+      "Value" : { "Fn::Join": [",", [{ "Ref" : "PrivateSubnetA" }, { "Ref" : "PrivateSubnetB" }, { "Ref" : "PrivateSubnetC" }]] },
+      "Export" : {
+        "Name": { "Fn::Join" : ["-", [ { "Ref" : "StackName" },"vpc","PrivateSubnets" ]] }
+      }
     },
     "PublicSubnets" : {
-      "Value" : { "Fn::Join": [",", [{ "Ref" : "PublicSubnetA" }, { "Ref" : "PublicSubnetB" }, { "Ref" : "PublicSubnetC" }]] }
+      "Value" : { "Fn::Join": [",", [{ "Ref" : "PublicSubnetA" }, { "Ref" : "PublicSubnetB" }, { "Ref" : "PublicSubnetC" }]] },
+      "Export" : {
+        "Name": { "Fn::Join" : ["-", [ { "Ref" : "StackName" },"vpc","PublicSubnets" ]] }
+      }
     },
     "HostedZoneName" : {
-      "Value" : { "Ref" : "HostedZoneName" }
+      "Value" : { "Ref" : "HostedZoneName" },
+      "Export" : {
+        "Name": { "Fn::Join" : ["-", [ { "Ref" : "StackName" },"vpc","HostedZoneName" ]] }
+      }
     }
   }
 }

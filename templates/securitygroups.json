@@ -1,11 +1,11 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-  "Description" : "Hydra-in-a-Box security groups and ingress permissions",
+  "Description" : "Hydra security groups and ingress permissions",
 
   "Parameters" : {
     "StackName": {
       "Type": "String",
-      "Description": "Name of the ElasticBeanstalk environment"
+      "Description": "Name of the CloudFormation stack"
     },
     "VPC": {
       "Type": "AWS::EC2::VPC::Id",
@@ -268,59 +268,101 @@
   "Outputs" : {
     "Default" : {
       "Description": "Security Group ID for the default security group",
-      "Value": { "Ref" : "DefaultSecurityGroup" }
+      "Value": { "Ref" : "DefaultSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","Default"]] }
+      }
     },
     "Bastion" : {
       "Description": "Security Group ID for the bastion security group",
-      "Value": { "Ref" : "BastionSecurityGroup" }
+      "Value": { "Ref" : "BastionSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","Bastion"]] }
+      }
     },
     "Webapp" : {
       "Description": "Security Group ID for the webapp security group",
-      "Value": { "Ref" : "WebappSecurityGroup" }
+      "Value": { "Ref" : "WebappSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","Webapp"]] }
+      }
     },
     "WebappLb" : {
       "Description": "Security Group ID for the webapp load balancer security group",
-      "Value": { "Ref" : "WebappLbSecurityGroup" }
+      "Value": { "Ref" : "WebappLbSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","WebappLb"]] }
+      }
     },
     "Fcrepo" : {
       "Description": "Security Group ID for the fcrepo security group",
-      "Value": { "Ref" : "FedoraSecurityGroup" }
+      "Value": { "Ref" : "FedoraSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","Fcrepo"]] }
+      }
     },
     "FcrepoLb" : {
       "Description": "Security Group ID for the fcrepo load balancersecurity group",
-      "Value": { "Ref" : "FedoraLbSecurityGroup" }
+      "Value": { "Ref" : "FedoraLbSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","FcrepoLb"]] }
+      }
     },
     "Solr" : {
       "Description": "Security Group ID for the solr security group",
-      "Value": { "Ref" : "SolrSecurityGroup" }
+      "Value": { "Ref" : "SolrSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","Solr"]] }
+      }
     },
     "SolrLb" : {
       "Description": "Security Group ID for the solr load balancer security group",
-      "Value": { "Ref" : "SolrLbSecurityGroup" }
+      "Value": { "Ref" : "SolrLbSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","SolrLb"]] }
+      }
     },
     "Zookeeper" : {
       "Description": "Security Group ID for the zookeeper security group",
-      "Value": { "Ref" : "ZookeeperSecurityGroup" }
+      "Value": { "Ref" : "ZookeeperSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","Zookeeper"]] }
+      }
     },
     "ZookeeperLb" : {
       "Description": "Security Group ID for the zookeeper load balancer security group",
-      "Value": { "Ref" : "ZookeeperLbSecurityGroup" }
+      "Value": { "Ref" : "ZookeeperLbSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","ZookeeperLb"]] }
+      }
     },
     "Database" : {
       "Description": "Security Group ID for the database security group",
-      "Value": { "Ref" : "DatabaseSecurityGroup" }
+      "Value": { "Ref" : "DatabaseSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","Database"]] }
+      }
     },
     "FcrepoDatabase" : {
       "Description": "Security Group ID for the database security group",
-      "Value": { "Ref" : "FcrepoDatabaseSecurityGroup" }
+      "Value": { "Ref" : "FcrepoDatabaseSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","FcrepoDatabase"]] }
+      }
     },
     "Redis" : {
       "Description": "Security Group ID for the redis security group",
-      "Value": { "Ref" : "RedisSecurityGroup" }
+      "Value": { "Ref" : "RedisSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","Redis"]] }
+      }
     },
     "OpenVPN" : {
       "Description": "Security Group ID for the openvpn security group",
-      "Value": { "Ref" : "OpenVPNSecurityGroup" }
+      "Value": { "Ref" : "OpenVPNSecurityGroup" },
+      "Export": {
+        "Name" : { "Fn::Join": ["-", [{ "Ref" : "StackName" },"sg","OpenVPN"]] }
+      }
     }
   }
 }

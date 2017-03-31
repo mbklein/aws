@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-  "Description" : "Hydra-in-a-Box application worker tier",
+  "Description" : "Hydra application worker tier",
 
   "Parameters" : {
     "StackName": {
@@ -428,7 +428,7 @@
             "Value": "Sun:00:00"
           }
         ],
-        "SolutionStackName" : "64bit Amazon Linux 2016.09 v2.3.0 running Ruby 2.3 (Puma)"
+        "SolutionStackName" : "64bit Amazon Linux 2016.09 v2.3.2 running Ruby 2.3 (Puma)"
       }
     }
   },

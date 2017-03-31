@@ -1,8 +1,12 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
-  "Description" : "Hydra-in-a-Box redis stack using ElastiCache",
+  "Description" : "Hydra redis stack using ElastiCache",
 
   "Parameters" : {
+    "StackName": {
+      "Type": "String",
+      "Description": "Name of the CloudFormation stack"
+    },
     "SecurityGroups": {
       "Type": "CommaDelimitedList",
       "Description": "A list of security group ids, such as sg-a123fd85"
@@ -38,14 +42,16 @@
   "Outputs": {
     "EndpointAddress": {
       "Description": "The Redis endpoint address",
-      "Value": {
-        "Fn::GetAtt": [ "RedisCluster", "RedisEndpoint.Address" ]
+      "Value": { "Fn::GetAtt": [ "RedisCluster", "RedisEndpoint.Address" ] },
+      "Export": {
+        "Name": { "Fn::Join": ["-", [ { "Ref" : "StackName" }, "redis", "EndpointAddress" ]] }
       }
     },
     "EndpointPort": {
       "Description": "The Redis endpoint port",
-      "Value": {
-        "Fn::GetAtt": [ "RedisCluster", "RedisEndpoint.Port" ]
+      "Value": { "Fn::GetAtt": [ "RedisCluster", "RedisEndpoint.Port" ] },
+      "Export": {
+        "Name": { "Fn::Join": ["-", [ { "Ref" : "StackName" }, "redis", "EndpointPort" ]] }
       }
     }
   }
