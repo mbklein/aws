@@ -497,7 +497,7 @@
       "Type" : "AWS::Route53::RecordSet",
       "Properties" : {
         "Name" : { "Fn::Join": [ ".", [ { "Ref": "StackName" }, { "Ref": "HostedZoneName" } ] ] },
-        "HostedZoneName" : { "Ref" : "HostedZoneName"},
+        "HostedZoneName" : { "Fn::Join": [ ".", [ { "Ref": "StackName" }, { "Ref": "HostedZoneName" } ] ] },
         "Type" : "A",
         "AliasTarget": {
           "DNSName": { "Fn::GetAtt" : ["WebappEnvironment", "EndpointURL"] },
@@ -509,7 +509,7 @@
       "Type" : "AWS::Route53::RecordSet",
       "Properties" : {
         "Name" : { "Fn::Join": [ ".", [ "*", { "Ref": "StackName" }, { "Ref": "HostedZoneName" } ] ] },
-        "HostedZoneName" : { "Ref" : "HostedZoneName"},
+        "HostedZoneName" : { "Fn::Join": [ ".", [ { "Ref": "StackName" }, { "Ref": "HostedZoneName" } ] ] },
         "Type" : "A",
         "AliasTarget": {
           "DNSName": { "Fn::GetAtt" : ["WebappEnvironment", "EndpointURL"] },
