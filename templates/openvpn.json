@@ -7,6 +7,11 @@
       "Type": "String",
       "Description": "Name of the ElasticBeanstalk environment"
     },
+    "ResourceName": {
+      "Type": "String",
+      "Description": "Name of the resource (for tagging)",
+      "Default": "openvpn"
+    },
     "SubnetID": {
       "Type": "AWS::EC2::Subnet::Id",
       "Description": "An existing subnet ID to use for the network interface"
@@ -76,7 +81,7 @@
         "Tags" : [
           {
             "Key" : "Name",
-            "Value" : { "Ref" : "StackName" }
+            "Value" : { "Fn::Sub" : "${StackName}-${ResourceName}" }
           }
         ],
         "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [

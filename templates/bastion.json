@@ -7,6 +7,11 @@
       "Type": "String",
       "Description": "Name of the ElasticBeanstalk environment"
     },
+    "ResourceName": {
+      "Type": "String",
+      "Description": "Name of the resource (for tagging)",
+      "Default": "bastion"
+    },
     "SubnetID": {
       "Type": "List<AWS::EC2::Subnet::Id>",
       "Description": "List of an existing subnet IDs to use for the load balancer and auto scaling group"
@@ -48,9 +53,7 @@
         "Tags" : [
           {
             "Key" : "Name",
-            "Value" : {
-              "Ref" : "StackName"
-            },
+            "Value" : { "Fn::Sub": "${StackName}-${ResourceName}" },
             "PropagateAtLaunch" : true
           }
         ]

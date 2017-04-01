@@ -158,17 +158,17 @@
     "CreateContinuousDeployment": { "Fn::Equals" : [{ "Ref": "ContinuousDeployment"}, "true"] }
   },
   "Resources" : {
-    "HyboxApplication" : {
+    "HydraApplication" : {
       "Type" : "AWS::ElasticBeanstalk::Application",
       "Properties" : {
         "ApplicationName" : { "Ref" : "StackName" },
         "Description" : "Hybox service"
       }
     },
-    "HyboxApplicationVersion" : {
+    "HydraApplicationVersion" : {
       "Type" : "AWS::ElasticBeanstalk::ApplicationVersion",
       "Properties" : {
-        "ApplicationName" : { "Ref" : "HyboxApplication" },
+        "ApplicationName" : { "Ref" : "HydraApplication" },
         "Description" : "Hybox service version",
         "SourceBundle" : {
           "S3Bucket" : { "Ref" : "S3BucketEB" },
@@ -181,8 +181,8 @@
       "Properties" : {
         "Parameters" : {
           "StackName" : { "Ref" : "StackName" },
-          "ApplicationName" : { "Ref" : "HyboxApplication" },
-          "VersionLabel" : { "Ref" : "HyboxApplicationVersion" },
+          "ApplicationName" : { "Ref" : "HydraApplication" },
+          "VersionLabel" : { "Ref" : "HydraApplicationVersion" },
           "KeyName" : { "Fn::Join" : [",", [{ "Ref" : "KeyName" }]] },
           "MinSize" : { "Ref" : "WebappMinSize" },
           "MaxSize" : { "Ref" : "WebappMaxSize" },
@@ -222,8 +222,8 @@
       "Properties" : {
         "Parameters" : {
           "StackName" : { "Ref" : "StackName" },
-          "ApplicationName" : { "Ref" : "HyboxApplication" },
-          "VersionLabel" : { "Ref" : "HyboxApplicationVersion" },
+          "ApplicationName" : { "Ref" : "HydraApplication" },
+          "VersionLabel" : { "Ref" : "HydraApplicationVersion" },
           "KeyName" : { "Fn::Join" : [",", [{ "Ref" : "KeyName" }]] },
           "MinSize" : { "Ref" : "WorkerMinSize" },
           "MaxSize" : { "Ref" : "WorkerMaxSize" },
@@ -333,7 +333,7 @@
       "Condition": "CreateContinuousDeployment",
       "Properties" : {
         "Parameters" : {
-          "ApplicationName" : { "Ref" : "HyboxApplication" },
+          "ApplicationName" : { "Ref" : "HydraApplication" },
           "WebappEnvironmentName" : { "Fn::GetAtt" : ["webapp", "Outputs.EnvironmentName"] },
           "WorkerEnvironmentName" : { "Fn::GetAtt" : ["workers", "Outputs.EnvironmentName"] },
           "S3Bucket" : { "Ref" : "S3BucketEB" },

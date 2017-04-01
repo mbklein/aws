@@ -7,6 +7,11 @@
       "Type": "String",
       "Description": "Name of the ElasticBeanstalk environment"
     },
+    "ResourceName": {
+      "Type": "String",
+      "Description": "Name of the resource (for tagging)",
+      "Default": "solr"
+    },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
       "Description": "Name of an existing EC2 KeyPair to enable SSH access to the ECS instances"
@@ -161,9 +166,7 @@
         "Tags" : [
           {
             "Key" : "Name",
-            "Value" : {
-              "Ref" : "StackName"
-            },
+            "Value" : { "Fn::Sub": "${StackName}-${ResourceName}" },
             "PropagateAtLaunch" : true
           }
         ]

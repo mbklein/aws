@@ -7,6 +7,11 @@
       "Type": "String",
       "Description": "Name of the ElasticBeanstalk environment"
     },
+    "ResourceName": {
+      "Type": "String",
+      "Description": "Name of the resource (for tagging)",
+      "Default": "fcrepo"
+    },
     "KeyName": {
       "Type": "AWS::EC2::KeyPair::KeyName",
       "Description": "Name of an existing EC2 KeyPair to enable SSH access to the ECS instances"
@@ -85,7 +90,7 @@
     "FcrepoApplication" : {
       "Type" : "AWS::ElasticBeanstalk::Application",
       "Properties" : {
-        "ApplicationName" : { "Ref" : "StackName" },
+        "ApplicationName" : { "Fn::Sub" : "${StackName}-${ResourceName}" },
         "Description" : "Fcrepo service"
       }
     },
@@ -230,7 +235,7 @@
       "Properties": {
         "ApplicationName": { "Ref": "FcrepoApplication" },
         "Description": "Fcrepo Environment",
-        "EnvironmentName": { "Ref" : "StackName"},
+        "EnvironmentName": { "Fn::Sub" : "${StackName}-${ResourceName}" },
         "TemplateName": { "Ref": "FcrepoConfigurationTemplate" },
         "VersionLabel": { "Ref": "FcrepoApplicationVersion" }
       }

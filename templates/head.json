@@ -173,7 +173,7 @@
       "Properties" : {
         "Parameters" : {
           "SubnetID" : { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-vpc-PrivateSubnets" } },
-          "SecurityGroups" : { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-securitygroups-Database" } },
+          "SecurityGroups" : { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-sg-Database" } },
           "MasterUsername" : { "Ref" : "DatabaseUsername" },
           "MasterUserPassword" : { "Ref" : "DatabasePassword" },
           "DatabaseName" : { "Ref" : "DatabaseName" },
@@ -208,8 +208,8 @@
           "QueuePrefix" : { "Ref" : "QueuePrefix" },
           "PrivateSubnets" : { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-vpc-PrivateSubnets" } },
           "PublicSubnets" : { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-vpc-PublicSubnets" } },
-          "SecurityGroups" : { "Fn::Join" : [",", [{ "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-securitygroups-Webapp" } }, { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-securitygroups-Default" } }]] },
-          "LBSecurityGroups" : { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-securitygroups-WebappLb" } },
+          "SecurityGroups" : { "Fn::Join" : [",", [{ "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-sg-Webapp" } }, { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-sg-Default" } }]] },
+          "LBSecurityGroups" : { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-sg-WebappLb" } },
           "HostedZoneName" : { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-dns-PublicZoneName" } },
           "SecretKeyBase" : { "Ref" : "SecretKeyBase" },
           "FcrepoUrl" : { "Fn::ImportValue" : { "Fn::Sub" : "${InfrastructureStack}-fcrepo-URL" } },
@@ -238,7 +238,7 @@
         },
         "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/application.json"]] }
       }
-    },
+    }
   },
   "Outputs": {
     "URL" : {

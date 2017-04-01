@@ -352,7 +352,7 @@
         "TTL": "900",
         "ResourceRecords" : { "Fn::GetAtt" : ["PublicDNS", "NameServers"] }
       }
-    },
+    }
   },
   "Outputs": {
     "VPN" : {
