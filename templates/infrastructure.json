@@ -298,19 +298,6 @@
         "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/postgres.json"]] }
       }
     },
-    "bastion" : {
-      "Type" : "AWS::CloudFormation::Stack",
-      "Properties" : {
-        "Parameters" : {
-          "StackName" : { "Ref" : "AWS::StackName"},
-          "KeyName" : { "Fn::Join" : [",", [{ "Ref" : "KeyName" }]] },
-          "SubnetID" : { "Fn::GetAtt" : ["vpc", "Outputs.PublicSubnets"] },
-          "InstanceType" : { "Ref" : "BastionInstanceType" },
-          "SecurityGroups" : { "Fn::GetAtt" : [ "securitygroups", "Outputs.Bastion"] }
-        },
-        "TemplateURL" : { "Fn::Join" : ["", ["https://s3.amazonaws.com/", { "Ref" : "S3Bucket" }, "/cloudformation/", { "Ref" : "S3KeyPrefix"}, "/templates/bastion.json"]] }
-      }
-    },
     "mail" : {
       "Type" : "AWS::CloudFormation::Stack",
       "Properties" : {
