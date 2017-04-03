@@ -92,22 +92,6 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub '${StackName}-solr'
-  SolrSecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !GetAtt 'SolrSecurityGroup.GroupId'
-      SourceSecurityGroupId: !Ref 'SolrSecurityGroup'
-      IpProtocol: tcp
-      FromPort: '0'
-      ToPort: '65535'
-  SolrLbSecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !GetAtt 'SolrSecurityGroup.GroupId'
-      SourceSecurityGroupId: !Ref 'SolrLbSecurityGroup'
-      IpProtocol: tcp
-      FromPort: '8983'
-      ToPort: '8983'
   SolrLbSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -119,6 +103,10 @@ Resources:
         FromPort: '80'
         ToPort: '80'
       - SourceSecurityGroupId: !Ref 'SolrSecurityGroup'
+        IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+      - SourceSecurityGroupId: !Ref 'BastionSecurityGroup'
         IpProtocol: tcp
         FromPort: '80'
         ToPort: '80'
@@ -184,14 +172,6 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub '${StackName}-zookeeper'
-  ZookeeperSecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !GetAtt 'ZookeeperSecurityGroup.GroupId'
-      SourceSecurityGroupId: !Ref 'ZookeeperSecurityGroup'
-      IpProtocol: tcp
-      FromPort: '0'
-      ToPort: '65535'
   OpenVPNSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
