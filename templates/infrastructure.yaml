@@ -86,7 +86,7 @@ Parameters:
     Type: String
     Description: The path on the host container instance that is presented to the
       container
-    Default: var/lib/docker/vfs/dir/solr-data
+    Default: /var/lib/docker/vfs/dir/solr-data
   ZookeeperEnsembleSize:
     Type: Number
     Description: Number of instances to launch
