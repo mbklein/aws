@@ -152,34 +152,25 @@ Resources:
         config:
           commands:
             01_add_instance_to_cluster:
-              command: !Sub '#!/bin/bash
-
-                echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config'
+              command: !Sub |
+                #!/bin/bash
+                echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
           files:
             /etc/cfn/cfn-hup.conf:
-              content: !Sub '[main]
-
+              content: !Sub |
+                [main]
                 stack=${AWS::StackId}
-
                 region=${AWS::Region}
-
-                '
               mode: '000400'
               owner: root
               group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub '[cfn-auto-reloader-hook]
-
+              content: !Sub |
+                [cfn-auto-reloader-hook]
                 triggers=post.update
-
                 path=Resources.ContainerInstances.Metadata.AWS::CloudFormation::Init
-
-                action=/opt/aws/bin/cfn-init -v          --stack ${AWS::StackName}         --resource
-                ContainerInstances          --region ${AWS::Region}
-
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ContainerInstances --region ${AWS::Region}
                 runas=root
-
-                '
           services:
             sysvinit:
               cfn-hup:
@@ -195,18 +186,12 @@ Resources:
       KeyName: !Ref 'KeyName'
       SecurityGroups: !Ref 'SecurityGroups'
       AssociatePublicIpAddress: 'true'
-      UserData: !Base64
-        Fn::Sub: '#!/bin/bash -xe
-
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
           yum install -y aws-cfn-bootstrap
-
-          /opt/aws/bin/cfn-init -v          --stack ${AWS::StackName}         --resource
-          ContainerInstances          --region ${AWS::Region}
-
-          /opt/aws/bin/cfn-signal -e $?          --stack ${AWS::StackName}         --resource
-          ECSAutoScalingGroup          --region ${AWS::Region}
-
-          '
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ContainerInstances --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ECSAutoScalingGroup --region ${AWS::Region}
   service:
     Type: AWS::ECS::Service
     DependsOn:

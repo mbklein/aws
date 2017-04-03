@@ -103,18 +103,13 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub '${StackName}-${ResourceName}'
-      UserData: !Base64
-        Fn::Sub: 'public_hostname=${VpnFqdn}
-
+      UserData:
+        Fn::Base64: !Sub |
+          public_hostname=${VpnFqdn}
           admin_user=${VpnUser}
-
           admin_pw=${VpnPassword}
-
           reroute_gw=0
-
           reroute_dns=1
-
-          '
   RecordSet:
     Type: AWS::Route53::RecordSet
     Properties:
