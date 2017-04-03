@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Hydra (branch '{{branch}}'; revision '{{commit}}')
+Description: Hydra Head Stack
 Parameters:
   InfrastructureStack:
     Type: String
@@ -19,7 +19,7 @@ Parameters:
   S3KeyPrefix:
     Type: String
     Description: S3 prefix to deployment artifacts
-    Default: current
+    Default: infrastructure/current
   DatabaseInstanceType:
     Type: String
     Description: Instance type to launch
@@ -55,6 +55,10 @@ Parameters:
     Description: Slack generated token for Incoming Webhook
     NoEcho: 'true'
     Default: ''
+  SlackWebhookChannel:
+    Type: String
+    Description: Slack channel for posting notifications
+    Default: ''
   WorkerInstanceType:
     Type: String
     Description: Instance type to launch
@@ -70,9 +74,6 @@ Parameters:
   WebappInstanceType:
     Type: String
     Description: Instance type to launch
-    AllowedValues:
-    - 'true'
-    - 'false'
     Default: t2.large
   WebappMinSize:
     Type: Number
@@ -160,28 +161,28 @@ Metadata:
       - HoneybadgerApiKey
       - LogzioKey
 Resources:
-  database:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      Parameters:
-        SubnetID: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-vpc-PrivateSubnets
-        SecurityGroups: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-sg-Database
-        MasterUsername: !Ref 'DatabaseUsername'
-        MasterUserPassword: !Ref 'DatabasePassword'
-        DatabaseName: !Ref 'DatabaseName'
-        AllocatedStorage: !Ref 'DatabaseStorageSize'
-        MultiAZDatabase: !Ref 'DatabaseMultiAZ'
-        DBInstanceClass: !Ref 'DatabaseInstanceType'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/postgres.yaml
   slack:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
         SlackWebhookToken: !Ref 'SlackWebhookToken'
         SlackWebhookChannel: !Ref 'SlackWebhookChannel'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/slack.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/slack.yaml'
+  database:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        SubnetID:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-vpc-PrivateSubnets'
+        SecurityGroups:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-sg-Database'
+        MasterUsername: !Ref 'DatabaseUsername'
+        MasterUserPassword: !Ref 'DatabasePassword'
+        DatabaseName: !Ref 'DatabaseName'
+        AllocatedStorage: !Ref 'DatabaseStorageSize'
+        MultiAZDatabase: !Ref 'DatabaseMultiAZ'
+        DBInstanceClass: !Ref 'DatabaseInstanceType'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/postgres.yaml'
   application:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -190,33 +191,40 @@ Resources:
         KeyName: !Sub '${KeyName}'
         S3Bucket: !Ref 'S3Bucket'
         S3BucketEB: !Ref 'S3BucketEB'
-        S3Key: !Ref 'WebappS3Key'
+        S3Key: !Ref 'S3Key'
         S3KeyPrefix: !Ref 'S3KeyPrefix'
-        BeanstalkSNSTopic: !GetAtt 'slack.BeanstalkSNSTopic'
+        BeanstalkSNSTopic: !GetAtt 'slack.Outputs.BeanstalkSNSTopic'
         QueuePrefix: !Ref 'QueuePrefix'
-        PrivateSubnets: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-vpc-PrivateSubnets
-        PublicSubnets: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-vpc-PublicSubnets
-        SecurityGroups: !Sub ['${Param1},${Param2}', {Param2: !ImportValue {'Fn::Sub': '${InfrastructureStack}-sg-Default'},
-            Param1: !ImportValue {'Fn::Sub': '${InfrastructureStack}-sg-Webapp'}}]
-        LBSecurityGroups: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-sg-WebappLb
-        HostedZoneName: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-dns-PublicZoneName
+        PrivateSubnets:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-vpc-PrivateSubnets'
+        PublicSubnets:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-vpc-PublicSubnets'
+        SecurityGroups:
+          Fn::Join:
+          - ','
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-sg-Default'
+            - Fn::ImportValue: !Sub '${InfrastructureStack}-sg-Webapp'
+        LBSecurityGroups:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-sg-WebappLb'
+        HostedZoneName:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-dns-PublicZoneName'
         SecretKeyBase: !Ref 'SecretKeyBase'
-        FcrepoUrl: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-fcrepo-URL
-        SolrUrl: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-solr-URL
-        ZookeeperHosts: !Sub ['${Param1}/configs', {Param1: !ImportValue {'Fn::Sub': '${InfrastructureStack}-zookeeper-EndpointAddress'}}]
-        RedisHost: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-redis-EndpointAddress
-        RedisPort: !ImportValue
-          Fn::Sub: ${InfrastructureStack}-redis-EndpointPort
-        RDSDatabaseName: !GetAtt 'database.DatabaseName'
-        RDSHostname: !GetAtt 'database.EndpointAddress'
-        RDSPort: !GetAtt 'database.EndpointPort'
+        FcrepoUrl:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-fcrepo-URL'
+        SolrUrl:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-solr-URL'
+        ZookeeperHosts:
+          Fn::Join:
+          - '/'
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-zookeeper-EndpointAddress'
+            - configs
+        RedisHost:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-redis-EndpointAddress'
+        RedisPort:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-redis-EndpointPort'
+        RDSDatabaseName: !GetAtt 'database.Outputs.DatabaseName'
+        RDSHostname: !GetAtt 'database.Outputs.EndpointAddress'
+        RDSPort: !GetAtt 'database.Outputs.EndpointPort'
         RDSUsername: !Ref 'DatabaseUsername'
         RDSPassword: !Ref 'DatabasePassword'
         WebappInstanceType: !Ref 'WebappInstanceType'
@@ -232,8 +240,8 @@ Resources:
         GoogleAnalyticsId: !Ref 'GoogleAnalyticsId'
         HoneybadgerApiKey: !Ref 'HoneybadgerApiKey'
         LogzioKey: !Ref 'LogzioKey'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/application.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/application.yaml'
 Outputs:
   URL:
     Description: URL for the deployed application
-    Value: !GetAtt 'application.URL'
+    Value: !GetAtt 'application.Outputs.URL'
