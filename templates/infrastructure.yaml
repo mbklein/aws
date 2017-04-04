@@ -57,7 +57,7 @@ Parameters:
   S3FedoraFilename:
     Type: String
     Description: S3 key to the Fcrepo war
-    Default: fcrepo-webapp.war
+    Default: fcrepo.zip
   FcrepoMinSize:
     Type: Number
     Description: Minimum number of Fedora instances to launch
@@ -66,43 +66,22 @@ Parameters:
     Type: Number
     Description: Maximum number of Fedora instances to launch
     Default: '1'
-  SolrCloudSize:
-    Type: Number
-    Description: Number of Solr instances to launch
-    Default: '1'
   SolrCloudInstanceType:
     Type: String
     Description: Instance type to launch
     Default: t2.large
+  S3SolrFilename:
+    Type: String
+    Description: S3 key to the Solr zip file
+    Default: 'solr.zip'
+  SolrCloudMinSize:
+    Type: Number
+    Description: Minimum number of Solr instances to launch
+    Default: '2'
   SolrCloudMaxSize:
     Type: Number
-    Description: Maximum number of instances that can be launched in your ECS cluster
+    Description: Maximum number of Solr instances to launch
     Default: '6'
-  SolrCloudDockerImage:
-    Type: String
-    Description: Docker image to run
-    Default: hybox/solr-ecs:6
-  SolrCloudDataVolumePath:
-    Type: String
-    Description: The path on the host container instance that is presented to the
-      container
-    Default: /var/lib/docker/vfs/dir/solr-data
-  ZookeeperEnsembleSize:
-    Type: Number
-    Description: Number of instances to launch
-    Default: '1'
-  ZookeeperEnsembleInstanceType:
-    Type: String
-    Description: Instance type to launch
-    Default: t2.micro
-  ZookeeperEnsembleMaxSize:
-    Type: String
-    Description: Max number of zks
-    Default: '4'
-  ZookeeperDockerImage:
-    Type: String
-    Description: Docker Image for zks
-    Default: hybox/exhibitor:test
   RedisInstanceType:
     Type: String
     Description: Instance type to launch
@@ -115,6 +94,22 @@ Parameters:
     Type: String
     Description: Instance type to launch
     Default: db.t2.large
+  ZookeeperInstanceType:
+    Type: String
+    Description: Instance type to launch
+    Default: t2.micro
+  S3ZookeeperFilename:
+    Type: String
+    Description: S3 key to the Zookeeper zip file
+    Default: 'zookeeper.zip'
+  ZookeeperMinSize:
+    Type: Number
+    Description: Minimum number of Zookeeper instances to launch
+    Default: '3'
+  ZookeeperMaxSize:
+    Type: Number
+    Description: Maximum number of Zookeeper instances to launch
+    Default: '9'
   VpnFqdn:
     Description: The fully-qualified hostname for the VPN server
     Type: String
@@ -148,8 +143,7 @@ Metadata:
       - FcrepoInstanceType
       - SolrCloudSize
       - SolrCloudInstanceType
-      - ZookeeperEnsembleSize
-      - ZookeeperEnsembleInstanceType
+      - ZookeeperInstanceType
     - Label:
         default: Fedora Repository Configuration
       Parameters:
@@ -183,15 +177,16 @@ Resources:
     Properties:
       Parameters:
         StackName: !Ref 'AWS::StackName'
+        InstanceType: !Ref 'ZookeeperInstanceType'
         KeyName: !Sub '${KeyName}'
         SubnetID: !GetAtt 'vpc.Outputs.PrivateSubnets'
         SecurityGroups: !Sub '${securitygroups.Outputs.Zookeeper},${securitygroups.Outputs.Default}'
         LBSecurityGroups: !GetAtt 'securitygroups.Outputs.ZookeeperLb'
         HostedZoneName: !GetAtt 'vpc.Outputs.HostedZoneName'
-        DesiredCapacity: !Ref 'ZookeeperEnsembleSize'
-        MaxSize: !Ref 'ZookeeperEnsembleMaxSize'
-        DockerImage: !Ref 'ZookeeperDockerImage'
-        InstanceType: !Ref 'ZookeeperEnsembleInstanceType'
+        MinSize: !Ref 'ZookeeperMinSize'
+        MaxSize: !Ref 'ZookeeperMaxSize'
+        S3Bucket: !Ref 'S3BucketEB'
+        S3Key: !Ref 'S3ZookeeperFilename'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/zookeeper.yaml'
   fcrepo:
     Type: AWS::CloudFormation::Stack
@@ -224,14 +219,14 @@ Resources:
         StackName: !Ref 'AWS::StackName'
         KeyName: !Sub '${KeyName}'
         HostedZoneName: !GetAtt 'vpc.Outputs.HostedZoneName'
+        S3Bucket: !Ref 'S3BucketEB'
+        S3Key: !Ref 'S3SolrFilename'
         SubnetID: !GetAtt 'vpc.Outputs.PrivateSubnets'
         SecurityGroups: !Sub '${securitygroups.Outputs.Solr},${securitygroups.Outputs.Default}'
         LBSecurityGroups: !GetAtt 'securitygroups.Outputs.SolrLb'
         ZookeeperHosts: !GetAtt 'zookeeper.Outputs.EndpointAddress'
-        DesiredCapacity: !Ref 'SolrCloudSize'
+        MinSize: !Ref 'SolrCloudMinSize'
         MaxSize: !Ref 'SolrCloudMaxSize'
-        DockerImage: !Ref 'SolrCloudDockerImage'
-        DataVolumePath: !Ref 'SolrCloudDataVolumePath'
         InstanceType: !Ref 'SolrCloudInstanceType'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/solr.yaml'
   redis:
