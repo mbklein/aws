@@ -226,6 +226,8 @@ Resources:
 Outputs:
   EndpointAddress:
     Value: !Sub '${EBRecordSet}:2181'
+    Export:
+      Name: !Sub '${StackName}-${ResourceName}-EndpointAddress'
   EnvironmentName:
     Value: !Ref 'ZookeeperEnvironment'
   URL:
