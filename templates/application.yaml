@@ -140,10 +140,10 @@ Resources:
         KeyName: !Sub '${KeyName}'
         MinSize: !Ref 'WebappMinSize'
         MaxSize: !Ref 'WebappMaxSize'
-        PublicSubnets: Ref
-        PrivateSubnets: Ref
-        SecurityGroups: Ref
-        LBSecurityGroups: Ref
+        PublicSubnets: !Join [',', !Ref 'PublicSubnets']
+        PrivateSubnets: !Join [',', !Ref 'PrivateSubnets']
+        SecurityGroups: !Join [',', !Ref 'SecurityGroups']
+        LBSecurityGroups: !Join [',', !Ref 'LBSecurityGroups']
         HostedZoneName: !Ref 'HostedZoneName'
         SecretKeyBase: !Ref 'SecretKeyBase'
         FcrepoUrl: !Ref 'FcrepoUrl'
@@ -167,7 +167,7 @@ Resources:
         GoogleAnalyticsId: !Ref 'GoogleAnalyticsId'
         HoneybadgerApiKey: !Ref 'HoneybadgerApiKey'
         LogzioKey: !Ref 'LogzioKey'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/webapp.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/webapp.yaml'
   workers:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -178,10 +178,10 @@ Resources:
         KeyName: !Sub '${KeyName}'
         MinSize: !Ref 'WorkerMinSize'
         MaxSize: !Ref 'WorkerMaxSize'
-        PublicSubnets: Ref
-        PrivateSubnets: Ref
-        SecurityGroups: Ref
-        LBSecurityGroups: Ref
+        PublicSubnets: !Join [',', !Ref 'PublicSubnets']
+        PrivateSubnets: !Join [',', !Ref 'PrivateSubnets']
+        SecurityGroups: !Join [',', !Ref 'SecurityGroups']
+        LBSecurityGroups: !Join [',', !Ref 'LBSecurityGroups']
         HostedZoneName: !Ref 'HostedZoneName'
         SecretKeyBase: !Ref 'SecretKeyBase'
         FcrepoUrl: !Ref 'FcrepoUrl'
@@ -204,7 +204,7 @@ Resources:
         UploadBucket: !Ref 'UploadBucket'
         HoneybadgerApiKey: !Ref 'HoneybadgerApiKey'
         LogzioKey: !Ref 'LogzioKey'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/worker.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/worker.yaml'
   DefaultQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -252,7 +252,7 @@ Resources:
         WorkerEnvironmentName: !GetAtt 'workers.Outputs.EnvironmentName'
         S3Bucket: !Ref 'S3BucketEB'
         S3Key: !Ref 'S3Key'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/codepipeline.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/codepipeline.yaml'
   UploadBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain

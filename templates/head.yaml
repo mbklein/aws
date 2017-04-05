@@ -23,7 +23,7 @@ Parameters:
   DatabaseInstanceType:
     Type: String
     Description: Instance type to launch
-    Default: t2.large
+    Default: db.t2.large
   DatabaseUsername:
     Type: String
     Description: Database Root Username
