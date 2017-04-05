@@ -1,0 +1,13 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "mbabineau/zookeeper-exhibitor",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "8181 2181 2888 3888"
+    }
+  ],
+  "Logging": "/var/log"
+}

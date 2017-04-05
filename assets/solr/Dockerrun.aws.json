@@ -1,0 +1,19 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "hybox/solr-ecs:6",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "8983"
+    }
+  ],
+  "Volumes": [
+    {
+      "HostDirectory": "/var/app/solr",
+      "ContainerDirectory": "/data/solr"
+    }
+  ],
+  "Logging": "/var/log"
+}

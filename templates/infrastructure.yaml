@@ -57,7 +57,7 @@ Parameters:
   S3FedoraFilename:
     Type: String
     Description: S3 key to the Fcrepo war
-    Default: fcrepo.zip
+    Default: fcrepo.war
   FcrepoMinSize:
     Type: Number
     Description: Minimum number of Fedora instances to launch
