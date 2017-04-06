@@ -179,7 +179,7 @@ Resources:
       - Namespace: aws:elasticbeanstalk:managedactions
         OptionName: PreferredStartTime
         Value: Sun:00:00
-      SolutionStackName: 64bit Amazon Linux 2016.09 v2.5.1 running Docker 1.12.6
+      SolutionStackName: 64bit Amazon Linux 2016.09 v2.5.2 running Docker 1.12.6
   SolrApplicationVersion:
     Type: AWS::ElasticBeanstalk::ApplicationVersion
     Properties:
