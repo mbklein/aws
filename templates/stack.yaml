@@ -230,14 +230,14 @@ Resources:
         StackName: !Ref 'AWS::StackName'
         KeyName: !Sub '${KeyName}'
         HostedZoneName: !Sub '${AWS::StackName}.vpc.${PublicZoneName}'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/vpc.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/vpc.yaml'
   securitygroups:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
         StackName: !Ref 'AWS::StackName'
         VPC: !GetAtt 'vpc.Outputs.VPCID'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/securitygroups.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/securitygroups.yaml'
   zookeeper:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -252,7 +252,7 @@ Resources:
         MaxSize: !Ref 'ZookeeperEnsembleMaxSize'
         DockerImage: !Ref 'ZookeeperDockerImage'
         InstanceType: !Ref 'ZookeeperEnsembleInstanceType'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/zookeeper.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/zookeeper.yaml'
   fcrepo:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -273,7 +273,7 @@ Resources:
         RDSPort: !GetAtt 'fcrepodb.Outputs.EndpointPort'
         RDSUsername: !Ref 'FcrepoDatabaseUsername'
         RDSPassword: !Ref 'FcrepoDatabasePassword'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/fcrepo.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/fcrepo.yaml'
   solr:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -290,7 +290,7 @@ Resources:
         DockerImage: !Ref 'SolrCloudDockerImage'
         DataVolumePath: !Ref 'SolrCloudDataVolumePath'
         InstanceType: !Ref 'SolrCloudInstanceType'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/solr.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/solr.yaml'
   redis:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -298,7 +298,7 @@ Resources:
         SubnetID: !GetAtt 'vpc.Outputs.PrivateSubnets'
         SecurityGroups: !GetAtt 'securitygroups.Outputs.Redis'
         InstanceType: !Ref 'RedisInstanceType'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/redis.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/redis.yaml'
   database:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -311,7 +311,7 @@ Resources:
         AllocatedStorage: !Ref 'DatabaseStorageSize'
         MultiAZDatabase: !Ref 'DatabaseMultiAZ'
         DBInstanceClass: !Ref 'DatabaseInstanceType'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/postgres.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/postgres.yaml'
   fcrepodb:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -324,7 +324,7 @@ Resources:
         AllocatedStorage: !Ref 'FcrepoDatabaseStorageSize'
         MultiAZDatabase: !Ref 'FcrepoDatabaseMultiAZ'
         DBInstanceClass: !Ref 'FcrepoDatabaseInstanceType'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/postgres.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/postgres.yaml'
   application:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -366,7 +366,7 @@ Resources:
         GoogleAnalyticsId: !Ref 'GoogleAnalyticsId'
         HoneybadgerApiKey: !Ref 'HoneybadgerApiKey'
         LogzioKey: !Ref 'LogzioKey'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/application.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/application.yaml'
   bastion:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -376,21 +376,21 @@ Resources:
         SubnetID: !GetAtt 'vpc.Outputs.PublicSubnets'
         InstanceType: !Ref 'BastionInstanceType'
         SecurityGroups: !GetAtt 'securitygroups.Outputs.Bastion'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/bastion.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/bastion.yaml'
   slack:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
         SlackWebhookToken: !Ref 'SlackWebhookToken'
         SlackWebhookChannel: !Ref 'SlackWebhookChannel'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/slack.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/slack.yaml'
   mail:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
         Domain: !Sub '${AWS::StackName}.${PublicZoneName}'
         HostedZoneName: !Ref 'PublicZoneName'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/mail.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/mail.yaml'
   openvpn:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -403,14 +403,14 @@ Resources:
         VpnFqdn: !Ref 'VpnFqdn'
         VpnUser: !Ref 'VpnUser'
         VpnPassword: !Ref 'VpnPassword'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/openvpn.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/openvpn.yaml'
   publicdns:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
         SubZone: !Ref 'AWS::StackName'
         PublicZoneName: !Ref 'PublicZoneName'
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/publicdns.yaml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/publicdns.yaml'
 Outputs:
   URL:
     Description: URL for the deployed application
