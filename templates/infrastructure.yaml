@@ -77,11 +77,11 @@ Parameters:
   SolrCloudMinSize:
     Type: Number
     Description: Minimum number of Solr instances to launch
-    Default: '2'
+    Default: '3'
   SolrCloudMaxSize:
     Type: Number
     Description: Maximum number of Solr instances to launch
-    Default: '6'
+    Default: '9'
   RedisInstanceType:
     Type: String
     Description: Instance type to launch
@@ -105,11 +105,11 @@ Parameters:
   ZookeeperMinSize:
     Type: Number
     Description: Minimum number of Zookeeper instances to launch
-    Default: '3'
+    Default: '2'
   ZookeeperMaxSize:
     Type: Number
     Description: Maximum number of Zookeeper instances to launch
-    Default: '9'
+    Default: '6'
   VpnFqdn:
     Description: The fully-qualified hostname for the VPN server
     Type: String
