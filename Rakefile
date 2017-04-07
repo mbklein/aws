@@ -24,6 +24,7 @@ task :audit_solution_stacks do
   require 'json'
   require 'yaml'
 
+
   find_template = ->(hash) do
     return hash if hash['Type'] == 'AWS::ElasticBeanstalk::ConfigurationTemplate'
     hash.each_pair do |k,v|
@@ -33,7 +34,11 @@ task :audit_solution_stacks do
     nil
   end
 
-  stacks = Aws::ElasticBeanstalk::Client.new.list_available_solution_stacks.solution_stacks
+  client = Aws::ElasticBeanstalk::Client.new(
+    access_key_id: 'AKIAJKKI6WULSX6GTSPQ',
+    secret_access_key: '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'
+  )
+  stacks = client.list_available_solution_stacks.solution_stacks
   matcher = FuzzyMatch.new(stacks)
   files = Dir['templates/*.yaml','templates/*.json']
   exit_code = 0
