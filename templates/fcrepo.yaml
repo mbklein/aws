@@ -58,13 +58,32 @@ Parameters:
   BinaryBucket:
     Type: String
     Description: S3 Bucket for Fedora's binary object store
-  BinaryBucketKey:
-    Type: String
-    Description: AWS Access Key ID for binary object store
-  BinaryBucketSecret:
-    Type: String
-    Description: AWS Secret Key for binary object store
 Resources:
+  BinaryBucketUser:
+    Type: AWS::IAM::User
+    Properties:
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action: s3:ListAllMyBuckets
+            Resource: arn:aws:s3:::*
+          - Effect: Allow
+            Action:
+            - s3:ListBucket
+            - s3:GetBucketLocation
+            Resource: !Sub arn:aws:s3:::${BinaryBucket}
+          - Effect: Allow
+            Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+            Resource: !Sub arn:aws:s3:::${BinaryBucket}/*
+        PolicyName: !Sub '${AWS::StackName}-FcrepoS3Access'
+  BinaryBucketAccess:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref BinaryBucketUser
   FcrepoApplication:
     Type: AWS::ElasticBeanstalk::Application
     Properties:
@@ -142,8 +161,9 @@ Resources:
         OptionName: JVM Options
         Value: !Sub '-Duser.dir="/var/lib/fcrepo" -Dfcrepo.postgresql.host="${RDSHostname}"
           -Dfcrepo.postgresql.port="${RDSPort}" -Dfcrepo.postgresql.username="${RDSUsername}"
-          -Dfcrepo.postgresql.password="${RDSPassword}" -Daws.accessKeyId="${BinaryBucketKey}"
-          -Daws.secretKey="${BinaryBucketSecret}" -Daws.bucket="${BinaryBucket}" -Dfcrepo.modeshape.configuration="classpath:/config/jdbc-postgresql-s3/repository.json"'
+          -Dfcrepo.postgresql.password="${RDSPassword}" -Daws.accessKeyId="${BinaryBucketAccess}"
+          -Daws.secretKey="${BinaryBucketAccess.SecretAccessKey}" -Daws.bucket="${BinaryBucket}"
+          -Dfcrepo.modeshape.configuration="classpath:/config/jdbc-postgresql-s3/repository.json"'
       - Namespace: aws:elasticbeanstalk:application
         OptionName: Application Healthcheck URL
         Value: /rest

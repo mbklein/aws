@@ -44,12 +44,6 @@ Parameters:
   FcrepoBinaryBucket:
     Type: String
     Description: S3 Bucket for Fedora's binary object store
-  FcrepoBinaryBucketKey:
-    Type: String
-    Description: AWS Access Key ID for binary object store
-  FcrepoBinaryBucketSecret:
-    Type: String
-    Description: AWS Secret Key for binary object store
   FcrepoInstanceType:
     Type: String
     Description: Instance type to launch
@@ -209,8 +203,6 @@ Resources:
         RDSUsername: !Ref 'FcrepoDatabaseUsername'
         RDSPassword: !Ref 'FcrepoDatabasePassword'
         BinaryBucket: !Ref 'FcrepoBinaryBucket'
-        BinaryBucketKey: !Ref 'FcrepoBinaryBucketKey'
-        BinaryBucketSecret: !Ref 'FcrepoBinaryBucketSecret'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/fcrepo.yaml'
   solr:
     Type: AWS::CloudFormation::Stack
