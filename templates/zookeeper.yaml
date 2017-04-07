@@ -7,7 +7,7 @@ Parameters:
   ResourceName:
     Type: String
     Description: Name of the resource (for tagging)
-    Default: zookeeper
+    Default: zk
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the EB instances

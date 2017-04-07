@@ -216,7 +216,7 @@ Resources:
         ZookeeperHosts:
           Fn::Join:
           - '/'
-          - - Fn::ImportValue: !Sub '${InfrastructureStack}-zookeeper-EndpointAddress'
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-zk-EndpointAddress'
             - configs
         RedisHost:
           Fn::ImportValue: !Sub '${InfrastructureStack}-redis-EndpointAddress'
