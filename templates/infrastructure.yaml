@@ -229,6 +229,7 @@ Resources:
         SubnetID: !GetAtt 'vpc.Outputs.PrivateSubnets'
         SecurityGroups: !GetAtt 'securitygroups.Outputs.Redis'
         InstanceType: !Ref 'RedisInstanceType'
+        HostedZoneName: !GetAtt 'vpc.Outputs.HostedZoneName'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/redis.yaml'
   fcrepodb:
     Type: AWS::CloudFormation::Stack
