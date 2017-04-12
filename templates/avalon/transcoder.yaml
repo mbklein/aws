@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Avalon Transcoding Pipeline
+Parameters:
+  ElasticTranscoderPipelineLambdaName:
+    Type: String
+    Description: Name of the lambda containing the pipeline creation function
+    Default: aws-cloudformation-elastic-transcoder-pipeline-1-0-0
+Resources:
+  MasterfileBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+  DerivativeBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+  PipelineNotification:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: pipeline-topic
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - elastictranscoder.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+  PipelinePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: pipeline-policy
+      Roles:
+      - !Ref 'PipelineRole'
+      PolicyDocument:
+        Version: '2008-10-17'
+        Statement:
+        - Sid: '1'
+          Effect: Allow
+          Action:
+          - s3:Put*
+          - s3:ListBucket
+          - s3:*MultipartUpload*
+          - s3:Get*
+          Resource:
+          - !Sub 'arn:aws:s3:::${MasterfileBucket}'
+          - !Sub 'arn:aws:s3:::${DerivativeBucket}'
+          - !Sub 'arn:aws:s3:::${MasterfileBucket}/*'
+          - !Sub 'arn:aws:s3:::${DerivativeBucket}/*'
+        - Sid: '2'
+          Effect: Allow
+          Action: sns:Publish
+          Resource:
+          - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${PipelineNotification}'
+        - Sid: '3'
+          Effect: Deny
+          Action:
+          - s3:*Delete*
+          - s3:*Policy*
+          - sns:*Remove*
+          - sns:*Delete*
+          - sns:*Permission*
+          Resource: '*'
+  TranscodingPipeline:
+    Type: Custom::ElasticTranscoderPipeline
+    Version: '1.0'
+    Properties:
+      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ElasticTranscoderPipelineLambdaName}'
+      Name: !Sub '${AWS::StackName}-pipeline'
+      Role: !GetAtt 'PipelineRole.Arn'
+      InputBucket: !Ref 'MasterfileBucket'
+      OutputBucket: !Ref 'DerivativeBucket'
+      Notifications:
+        Completed: !Ref 'PipelineNotification'
+        Error: !Ref 'PipelineNotification'
+        Progressing: !Ref 'PipelineNotification'
+        Warning: !Ref 'PipelineNotification'
+Outputs:
+  Pipeline:
+    Description: Transcoding Pipeline
+    Value: !Sub '${AWS::StackName}-pipeline'
+  MasterfileBucket:
+    Description: Bucket for Masterfiles
+    Value: !Ref 'MasterfileBucket'
+  DerivativeBucket:
+    Description: Bucket for Derivatives
+    Value: !Ref 'DerivativeBucket'

@@ -102,6 +102,15 @@ Parameters:
   InitialUser:
     Type: String
     Description: The initial administrative user
+  MasterfileBucket:
+    Type: String
+    Description: The S3 bucket for masterfiles
+  DerivativeBucket:
+    Type: String
+    Description: The S3 bucket for streaming derivatives
+  TranscodingPipeline:
+    Type: String
+    Description: The name of the Elastic Transcoder pipeline
 Resources:
   WorkerEnvironment:
     Type: AWS::ElasticBeanstalk::Environment
@@ -181,6 +190,15 @@ Resources:
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__INITIAL_USER
           Value: !Ref 'InitialUser'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__MASTERFILE_BUCKET
+          Value: !Ref 'MasterfileBucket'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__DERIVATIVE_BUCKET
+          Value: !Ref 'DerivativeBucket'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__TRANSCODING_PIPELINE
+          Value: !Ref 'TranscodingPipeline'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__MEDIAINFO__PATH
           Value: "/usr/bin/mediainfo"

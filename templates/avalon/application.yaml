@@ -171,6 +171,9 @@ Resources:
         EmailComments: !Ref 'EmailComments'
         EmailNotifications: !Ref 'EmailNotifications'
         InitialUser: !Ref 'InitialUser'
+        MasterfileBucket: !GetAtt 'transcodingpipeline.Outputs.MasterfileBucket'
+        DertivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
+        TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/webapp.yaml'
   workers:
     Type: AWS::CloudFormation::Stack
@@ -209,6 +212,9 @@ Resources:
         EmailComments: !Ref 'EmailComments'
         EmailNotifications: !Ref 'EmailNotifications'
         InitialUser: !Ref 'InitialUser'
+        MasterfileBucket: !GetAtt 'transcodingpipeline.Outputs.MasterfileBucket'
+        DertivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
+        TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/worker.yaml'
   DefaultQueue:
     Type: AWS::SQS::Queue
@@ -234,6 +240,23 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier
       - arn:aws:iam::aws:policy/AWSElasticBeanstalkWorkerTier
+      Policies:
+      - PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:ListBucket
+            - s3:Get*
+            - s3:Put*
+            - s3:*MultipartUpload*
+            - s3:Delete*
+            Resource:
+            - !Sub 'arn:aws:s3:::${transcodingpipeline.Outputs.MasterfileBucket}'
+            - !Sub 'arn:aws:s3:::${transcodingpipeline.Outputs.DerivativeBucket}'
+            - !Sub 'arn:aws:s3:::${transcodingpipeline.Outputs.MasterfileBucket}/*'
+            - !Sub 'arn:aws:s3:::${transcodingpipeline.Outputs.DerivativeBucket}/*'
+        PolicyName: !Sub '${AWS::StackName}-TranscodingBucketAccess'
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -251,6 +274,10 @@ Resources:
         S3Bucket: !Ref 'S3BucketEB'
         S3Key: !Ref 'S3Key'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/codepipeline.yaml'
+  transcodingpipeline:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/transcoder.yaml'
 Outputs:
   URL:
     Description: URL of the AWS Elastic Beanstalk Environment
