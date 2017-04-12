@@ -120,6 +120,10 @@ Parameters:
   EmailNotifications:
     Type: String
     Description: The email address for Notifications
+  InitialUser:
+    Type: String
+    Description: The initial administrative user
+    Default: 'archivist1@example.com'
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -204,7 +208,10 @@ Resources:
         FcrepoUrl:
           Fn::ImportValue: !Sub '${InfrastructureStack}-fcrepo-URL'
         SolrUrl:
-          Fn::ImportValue: !Sub '${InfrastructureStack}-solr-URL'
+          Fn::Join:
+          - '/'
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-solr-URL'
+            - !Ref 'AWS::StackName'
         ZookeeperHosts:
           Fn::Join:
           - '/'
@@ -229,6 +236,10 @@ Resources:
         WorkerHealthReportingSystemType: !Ref 'WorkerHealthReportingSystemType'
         SSLCertificateId: !Ref 'SSLCertificateId'
         ContinuousDeployment: !Ref 'ContinuousDeployment'
+        EmailSupport: !Ref 'EmailSupport'
+        EmailComments: !Ref 'EmailComments'
+        EmailNotifications: !Ref 'EmailNotifications'
+        InitialUser: !Ref 'InitialUser'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/application.yaml'
 Outputs:
   URL:

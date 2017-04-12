@@ -114,6 +114,10 @@ Parameters:
   EmailNotifications:
     Type: String
     Description: The email address for Notifications
+  InitialUser:
+    Type: String
+    Description: The initial administrative user
+    Default: 'archivist1@example.com'
 Conditions:
   CreateContinuousDeployment: !Equals [!Ref 'ContinuousDeployment', 'true']
 Resources:
@@ -163,6 +167,10 @@ Resources:
         HealthReportingSystemType: !Ref 'WebappHealthReportingSystemType'
         IamInstanceProfile: !GetAtt 'EC2InstanceProfile.Arn'
         SSLCertificateId: !Ref 'SSLCertificateId'
+        EmailSupport: !Ref 'EmailSupport'
+        EmailComments: !Ref 'EmailComments'
+        EmailNotifications: !Ref 'EmailNotifications'
+        InitialUser: !Ref 'InitialUser'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/webapp.yaml'
   workers:
     Type: AWS::CloudFormation::Stack
@@ -197,6 +205,10 @@ Resources:
         IamInstanceProfile: !GetAtt 'EC2InstanceProfile.Arn'
         InstanceType: !Ref 'WorkerInstanceType'
         HealthReportingSystemType: !Ref 'WorkerHealthReportingSystemType'
+        EmailSupport: !Ref 'EmailSupport'
+        EmailComments: !Ref 'EmailComments'
+        EmailNotifications: !Ref 'EmailNotifications'
+        InitialUser: !Ref 'InitialUser'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/worker.yaml'
   DefaultQueue:
     Type: AWS::SQS::Queue
@@ -207,10 +219,27 @@ Resources:
         maxReceiveCount: 5
   DefaultDeadLetterQueue:
     Type: AWS::SQS::Queue
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier
+      - arn:aws:iam::aws:policy/AWSElasticBeanstalkWorkerTier
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: /
+      Roles:
+      - !Ref 'EC2Role'
   codepipeline:
     Type: AWS::CloudFormation::Stack
     Condition: CreateContinuousDeployment
