@@ -209,7 +209,7 @@ Resources:
           Fn::ImportValue: !Sub '${InfrastructureStack}-fcrepo-URL'
         SolrUrl:
           Fn::Join:
-          - '/'
+          - ''
           - - Fn::ImportValue: !Sub '${InfrastructureStack}-solr-URL'
             - !Ref 'AWS::StackName'
         ZookeeperHosts:

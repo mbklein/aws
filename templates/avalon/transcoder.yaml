@@ -5,6 +5,9 @@ Parameters:
     Type: String
     Description: Name of the lambda containing the pipeline creation function
     Default: aws-cloudformation-elastic-transcoder-pipeline-1-0-0
+  StackName:
+    Type: String
+    Description: Name of the application stack (for tagging and naming)
 Resources:
   MasterfileBucket:
     Type: AWS::S3::Bucket
@@ -69,7 +72,7 @@ Resources:
     Version: '1.0'
     Properties:
       ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ElasticTranscoderPipelineLambdaName}'
-      Name: !Sub '${AWS::StackName}-pipeline'
+      Name: !Sub '${StackName}-transcoding-pipeline'
       Role: !GetAtt 'PipelineRole.Arn'
       InputBucket: !Ref 'MasterfileBucket'
       OutputBucket: !Ref 'DerivativeBucket'
@@ -81,7 +84,10 @@ Resources:
 Outputs:
   Pipeline:
     Description: Transcoding Pipeline
-    Value: !Sub '${AWS::StackName}-pipeline'
+    Value: !Sub '${StackName}-transcoding-pipeline'
+  PipelineSNSTopic:
+    Description: SNS Topic for the transcoding pipeline
+    Value: !Ref 'PipelineNotification'
   MasterfileBucket:
     Description: Bucket for Masterfiles
     Value: !Ref 'MasterfileBucket'

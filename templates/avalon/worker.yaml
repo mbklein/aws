@@ -111,6 +111,9 @@ Parameters:
   TranscodingPipeline:
     Type: String
     Description: The name of the Elastic Transcoder pipeline
+  PipelineSNSTopic:
+    Type: String
+    Description: The SNS topic for Elastic Transcoder pipeline notifications
 Resources:
   WorkerEnvironment:
     Type: AWS::ElasticBeanstalk::Environment
@@ -191,14 +194,17 @@ Resources:
           OptionName: SETTINGS__INITIAL_USER
           Value: !Ref 'InitialUser'
         - Namespace: aws:elasticbeanstalk:application:environment
-          OptionName: SETTINGS__MASTERFILE_BUCKET
+          OptionName: SETTINGS__TRANSCODING__MASTERFILE_BUCKET
           Value: !Ref 'MasterfileBucket'
         - Namespace: aws:elasticbeanstalk:application:environment
-          OptionName: SETTINGS__DERIVATIVE_BUCKET
+          OptionName: SETTINGS__TRANSCODING__DERIVATIVE_BUCKET
           Value: !Ref 'DerivativeBucket'
         - Namespace: aws:elasticbeanstalk:application:environment
-          OptionName: SETTINGS__TRANSCODING_PIPELINE
+          OptionName: SETTINGS__TRANSCODING__PIPELINE
           Value: !Ref 'TranscodingPipeline'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__TRANSCODING__SNS_TOPIC
+          Value: !Ref 'PipelineSNSTopic'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__MEDIAINFO__PATH
           Value: "/usr/bin/mediainfo"

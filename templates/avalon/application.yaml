@@ -4,6 +4,8 @@ Parameters:
   StackName:
     Type: String
     Description: Name of the ElasticBeanstalk environment
+    MinLength: 1
+    MaxLength: 15
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances
@@ -172,8 +174,9 @@ Resources:
         EmailNotifications: !Ref 'EmailNotifications'
         InitialUser: !Ref 'InitialUser'
         MasterfileBucket: !GetAtt 'transcodingpipeline.Outputs.MasterfileBucket'
-        DertivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
+        DerivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
         TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
+        PipelineSNSTopic: !GetAtt 'transcodingpipeline.Outputs.PipelineSNSTopic'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/webapp.yaml'
   workers:
     Type: AWS::CloudFormation::Stack
@@ -213,8 +216,9 @@ Resources:
         EmailNotifications: !Ref 'EmailNotifications'
         InitialUser: !Ref 'InitialUser'
         MasterfileBucket: !GetAtt 'transcodingpipeline.Outputs.MasterfileBucket'
-        DertivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
+        DerivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
         TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
+        PipelineSNSTopic: !GetAtt 'transcodingpipeline.Outputs.PipelineSNSTopic'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/worker.yaml'
   DefaultQueue:
     Type: AWS::SQS::Queue
@@ -277,6 +281,8 @@ Resources:
   transcodingpipeline:
     Type: AWS::CloudFormation::Stack
     Properties:
+      Parameters:
+        StackName: !Ref 'StackName'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/transcoder.yaml'
 Outputs:
   URL:
