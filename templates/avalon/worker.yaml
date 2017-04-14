@@ -206,6 +206,12 @@ Resources:
           OptionName: SETTINGS__TRANSCODING__SNS_TOPIC
           Value: !Ref 'PipelineSNSTopic'
         - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__STREAMING__RTMP_BASE
+          Value: !Ref 'RTMPBASE'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__STREAMING__HLS_BASE
+          Value: !Ref 'HLSBASE'
+        - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__MEDIAINFO__PATH
           Value: "/usr/bin/mediainfo"
         - Namespace: aws:elasticbeanstalk:application:environment

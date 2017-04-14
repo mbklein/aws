@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  StackName:
+    Type: String
+    Description: Name of the CloudFormation stack
+  HostedZoneName:
+    Type: String
+    Description: Route53 zone to create an alias in
+  DerivativeBucket:
+    Type: AWS::S3::Bucket
+    Description: Bucket that contains all the streaming files
+  TrustedSigners:
+    Type: List<String>
+    Description: IDs of accounts that can sign CloudFront URLs
+Resources:
+  RTMPDistribution:
+    Type: AWS::CloudFront::StreamingDistribution
+    Properties:
+      StreamingDistributionConfig:
+        Origins:
+        - DomainName: !GetAtt 'DerivativeBucket.DomainName'
+          Id: !Sub '${StackName}-derivatives-origin'
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub '${StackName}-origin-ccess-identity'
+        Enabled: 'true'
+        Comment: Some comment
+        Aliases:
+        - !Sub '${StackName}.${HostedZoneName}/'
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          TargetOriginId: !Sub '${StackName}-derivatives-origin'
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          TrustedSigners: !Ref 'TrustedSigners'
+          ViewerProtocolPolicy: allow-all
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'
+  HLSDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !GetAtt 'DerivativeBucket.DomainName'
+          Id: !Sub '${StackName}-derivatives-origin'
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub '${StackName}-origin-ccess-identity'
+        Enabled: 'true'
+        Comment: Some comment
+        DefaultRootObject: index.html
+        Aliases:
+        - !Sub '${StackName}.${HostedZoneName}/'
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          TargetOriginId: !Sub '${StackName}-derivatives-origin'
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          TrustedSigners: !Ref 'TrustedSigners'
+          ViewerProtocolPolicy: allow-all
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'
+Outputs:
+  RTMPBase:
+    Description: The RTMP CloudFront Distribution URL
+    Value: !GetAtt 'RTMPDistribution.DomainName'
+  HLSBase:
+    Description: The HLS CloudFront Distribution URL
+    Value: !GetAtt 'HLSDistribution.DomainName'
