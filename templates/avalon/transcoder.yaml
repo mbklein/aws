@@ -56,12 +56,14 @@ Resources:
               }
             }
 
-            var physicalResourceId = null;
-            if (event.PhysicaResourceId && event.PhysicalResourceId.test(/^(.+)\$OK$/)) {
-              physicalResourceId = event.PhysicalResourceId.test(/^(.+)\$OK$/)[1];
+            console.log('REQUEST RECEIVED:', JSON.stringify(event));
+            var physicalResourceId = event.PhysicalResourceId;
+            var re = /^(.+)\$OK$/;
+            if ((physicalResourceId != null) && re.test(physicalResourceId)) {
+              physicalResourceId = physicalResourceId.match(re)[1];
             }
+            console.log('PHYSICAL RESOURCE ID:', physicalResourceId);
             try {
-                console.log('REQUEST RECEIVED:', JSON.stringify(event));
 
                 var AWS = require('aws-sdk');
                 var elastictranscoder = new AWS.ElasticTranscoder();
