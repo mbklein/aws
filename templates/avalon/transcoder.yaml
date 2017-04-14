@@ -1,14 +1,121 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Avalon Transcoding Pipeline
 Parameters:
-  ElasticTranscoderPipelineLambdaName:
-    Type: String
-    Description: Name of the lambda containing the pipeline creation function
-    Default: aws-cloudformation-elastic-transcoder-pipeline-1-0-0
   StackName:
     Type: String
     Description: Name of the application stack (for tagging and naming)
 Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: !Sub '${AWS::StackName}-cf-elastic-transcoder-pipeline'
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - elastictranscoder:*
+            - iam:PassRole
+            Resource:
+            - "*"
+  PipelineFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          exports.handler = (event, context, callback) => {
+            var response = require('cfn-response');
+
+            reply = function(err, physicalId, data) {
+              if (data == null) data = {};
+              data.LogicalResourceId = event.LogicalResourceId;
+              data.RequestId = event.RequestId;
+              data.StackId = event.StackId;
+
+              if (err) {
+                response.send(event, context, response.FAILED, { "Error": "Error: " + err });
+              } else {
+                response.send(event, context, response.SUCCESS, data, physicalId);
+              }
+            }
+
+            var physicalResourceId = null;
+            if (event.PhysicaResourceId && event.PhysicalResourceId.test(/^(.+)\$OK$/)) {
+              physicalResourceId = event.PhysicalResourceId.test(/^(.+)\$OK$/)[1];
+            }
+            try {
+                console.log('REQUEST RECEIVED:', JSON.stringify(event));
+
+                var AWS = require('aws-sdk');
+                var elastictranscoder = new AWS.ElasticTranscoder();
+
+                params = event.ResourceProperties;
+                delete params.ServiceToken;
+                switch (event.RequestType) {
+                  case "Create":
+                    elastictranscoder.createPipeline(params, function(err, data) {
+                      if (err) {
+                        console.error(err);
+                        reply(err);
+                      } else  {
+                        reply(null, data.Pipeline.Id + "$OK", { "Arn": data.Pipeline.Arn });
+                      }
+                    });
+                    break;
+                  case "Update":
+                    if (physicalResourceId == null) {
+                      reply(null, physicalResourceId, { Id: physicalResourceId });
+                      return;
+                    }
+                    params.Id = physicalResourceId;
+                    delete params.OutputBucket;
+                    elastictranscoder.updatePipeline(params, function(err, data) {
+                      if (err) {
+                        console.error(err);
+                        reply(err);
+                      } else {
+                        reply(null, data.Pipeline.Id, { "Arn": data.Pipeline.Arn });
+                      }
+                    });
+                    break;
+                  case "Delete":
+                    if (physicalResourceId == null) {
+                      reply(null, physicalResourceId, { Id: physicalResourceId });
+                      return;
+                    }
+                    elastictranscoder.deletePipeline({ Id: physicalResourceId }, function(err, data) {
+                      if (err) console.error(err);
+                      reply(err, physicalResourceId, {});
+                    });
+                    break;
+                  default:
+                    reply("Unknown request type: " + event.RequestType);
+                }
+            } catch(err) {
+                reply(err);
+            }
+          };
+      Handler: index.handler
+      Runtime: nodejs4.3
+      Timeout: '10'
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
   MasterfileBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -71,7 +178,7 @@ Resources:
     Type: Custom::ElasticTranscoderPipeline
     Version: '1.0'
     Properties:
-      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ElasticTranscoderPipelineLambdaName}'
+      ServiceToken: !GetAtt 'PipelineFunction.Arn'
       Name: !Sub '${StackName}-transcoding-pipeline'
       Role: !GetAtt 'PipelineRole.Arn'
       InputBucket: !Ref 'MasterfileBucket'
