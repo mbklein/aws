@@ -172,10 +172,10 @@ Resources:
         Value: minor
       - Namespace: aws:elasticbeanstalk:managedactions:platformupdate
         OptionName: InstanceRefreshEnabled
-        Value: 'true'
+        Value: 'false'
       - Namespace: aws:elasticbeanstalk:managedactions
         OptionName: ManagedActionsEnabled
-        Value: 'true'
+        Value: 'false'
       - Namespace: aws:elasticbeanstalk:managedactions
         OptionName: PreferredStartTime
         Value: Sun:00:00
