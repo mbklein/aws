@@ -1,0 +1,28 @@
+{
+  "bugs": {
+    "url": "https://github.com/mbklein/cfn-elastic_transcoder_pipeline/issues"
+  },
+  "dependencies": {
+    "cfn-wrapper": "latest",
+    "aws-sdk": "latest"
+  },
+  "description": "AWS Lambda function to manage Elastic Transcoder pipelines from CloudFormation.",
+  "directories": {},
+  "homepage": "https://github.com/mbklein/cfn-elastic_transcoder_pipeline",
+  "license": "Apache 2.0",
+  "main": "./index.js",
+  "maintainers": [
+    {
+      "name": "mbklein",
+      "email": "mbklein@gmail.com"
+    }
+  ],
+  "name": "cfn-elastic_transcoder_pipeline",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mbklein/cfn-elastic_transcoder_pipeline.git"
+  },
+  "version": "0.0.2"
+}

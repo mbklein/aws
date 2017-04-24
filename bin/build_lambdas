@@ -1,0 +1,15 @@
+#!/bin/bash
+
+S3_BUCKET=${S3_BUCKET:-nul-repo-deploy}
+S3_KEY=${S3_KEY:-infrastructure/current}
+
+cd lambdas
+for f in `find . -type d -depth 1`; do
+  cd $f
+  npm install
+  zip -r ../$f.zip .
+  cd ..
+done
+cd ..
+
+aws s3 sync $@ lambdas s3://${S3_BUCKET}/cloudformation/${S3_KEY}/lambdas --exclude '*' --include '*.zip'

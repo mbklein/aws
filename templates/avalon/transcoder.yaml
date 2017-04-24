@@ -4,6 +4,12 @@ Parameters:
   StackName:
     Type: String
     Description: Name of the application stack (for tagging and naming)
+  S3Bucket:
+    Type: String
+    Description: S3 bucket to the cfn deployment artifacts
+  S3KeyPrefix:
+    Description: S3 prefix to deployment artifacts
+    Type: String
 Resources:
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -39,95 +45,23 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        ZipFile: |
-          exports.handler = (event, context, callback) => {
-            var response = require('cfn-response');
-
-            reply = function(err, physicalId, data) {
-              if (data == null) data = {};
-              data.LogicalResourceId = event.LogicalResourceId;
-              data.RequestId = event.RequestId;
-              data.StackId = event.StackId;
-
-              if (err) {
-                response.send(event, context, response.FAILED, { "Error": "Error: " + err });
-              } else {
-                response.send(event, context, response.SUCCESS, data, physicalId);
-              }
-            }
-
-            console.log('REQUEST RECEIVED:', JSON.stringify(event));
-            var physicalResourceId = event.PhysicalResourceId;
-            var re = /^(.+)\$OK$/;
-            if ((physicalResourceId != null) && re.test(physicalResourceId)) {
-              physicalResourceId = physicalResourceId.match(re)[1];
-            }
-            console.log('PHYSICAL RESOURCE ID:', physicalResourceId);
-            try {
-
-                var AWS = require('aws-sdk');
-                var elastictranscoder = new AWS.ElasticTranscoder();
-
-                params = event.ResourceProperties;
-                delete params.ServiceToken;
-                switch (event.RequestType) {
-                  case "Create":
-                    elastictranscoder.createPipeline(params, function(err, data) {
-                      if (err) {
-                        console.error(err);
-                        reply(err);
-                      } else  {
-                        reply(null, data.Pipeline.Id + "$OK", { "Arn": data.Pipeline.Arn, "Id": data.Pipeline.Id });
-                      }
-                    });
-                    break;
-                  case "Update":
-                    if (physicalResourceId == null) {
-                      reply(null, physicalResourceId, { Id: physicalResourceId });
-                      return;
-                    }
-                    params.Id = physicalResourceId;
-                    delete params.OutputBucket;
-                    elastictranscoder.updatePipeline(params, function(err, data) {
-                      if (err) {
-                        console.error(err);
-                        reply(err);
-                      } else {
-                        reply(null, data.Pipeline.Id, { "Arn": data.Pipeline.Arn, "Id": data.Pipeline.Id });
-                      }
-                    });
-                    break;
-                  case "Delete":
-                    if (physicalResourceId == null) {
-                      reply(null, physicalResourceId, { Id: physicalResourceId });
-                      return;
-                    }
-                    elastictranscoder.deletePipeline({ Id: physicalResourceId }, function(err, data) {
-                      if (err) console.error(err);
-                      reply(err, physicalResourceId, {});
-                    });
-                    break;
-                  default:
-                    reply("Unknown request type: " + event.RequestType);
-                }
-            } catch(err) {
-                reply(err);
-            }
-          };
+        S3Bucket: !Ref 'S3Bucket'
+        S3Key: !Sub 'cloudformation/${S3KeyPrefix}/lambdas/elastic_transcoder.zip'
       Handler: index.handler
       Runtime: nodejs4.3
       Timeout: '10'
       Role: !GetAtt 'LambdaExecutionRole.Arn'
   MasterfileBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-    CorsConfiguration:
-      CorsRules:
-      - AllowedOrigins: ['*']
-        AllowedMethods: ["GET", "POST", "PUT"]
+#    DeletionPolicy: Retain
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+        - AllowedOrigins: ['*']
+          AllowedMethods: ["GET", "POST", "PUT"]
   DerivativeBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
+#    DeletionPolicy: Retain
   PipelineNotification:
     Type: AWS::SNS::Topic
     Properties:

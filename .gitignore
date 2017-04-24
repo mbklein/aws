@@ -2,3 +2,5 @@
 /build
 /params/private.json
 assets/build
+lambdas/*.zip
+lambdas/**/node_modules/*
