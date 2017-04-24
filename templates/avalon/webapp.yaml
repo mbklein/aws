@@ -102,18 +102,26 @@ Parameters:
   InitialUser:
     Type: String
     Description: The initial administrative user
-  MasterfileBucket:
-    Type: String
-    Description: The S3 bucket for masterfiles
-  DerivativeBucket:
-    Type: String
-    Description: The S3 bucket for streaming derivatives
   TranscodingPipeline:
     Type: String
     Description: The name of the Elastic Transcoder pipeline
   PipelineSNSTopic:
     Type: String
     Description: The SNS topic for Elastic Transcoder pipeline notifications
+  CloudFrontHttp:
+    Type: String
+    Description: The base URL of the CloudFront distribution to use for HTTP
+  CloudFrontRtmp:
+    Type: String
+    Description: The base URL of the CloudFront distribution to use for HTTP
+  CloudFrontKey:
+    NoEcho: 'true'
+    Type: String
+    Description: The private key to use for signing CloudFront requests
+  CloudFrontKeyId:
+    NoEcho: 'true'
+    Type: String
+    Description: The keypair ID of the CloudFront signing key
 Conditions:
   HasSSLCertificate: !Not [!Equals [!Ref 'SSLCertificateId', '']]
 Mappings:
@@ -313,16 +321,10 @@ Resources:
           OptionName: SETTINGS__INITIAL_USER
           Value: !Ref 'InitialUser'
         - Namespace: aws:elasticbeanstalk:application:environment
-          OptionName: SETTINGS__TRANSCODING__MASTERFILE_BUCKET
-          Value: !Ref 'MasterfileBucket'
-        - Namespace: aws:elasticbeanstalk:application:environment
-          OptionName: SETTINGS__TRANSCODING__DERIVATIVE_BUCKET
-          Value: !Ref 'DerivativeBucket'
-        - Namespace: aws:elasticbeanstalk:application:environment
-          OptionName: SETTINGS__TRANSCODING__PIPELINE
+          OptionName: SETTINGS__ENCODING__PIPELINE
           Value: !Ref 'TranscodingPipeline'
         - Namespace: aws:elasticbeanstalk:application:environment
-          OptionName: SETTINGS__TRANSCODING__SNS_TOPIC
+          OptionName: SETTINGS__ENCODING__SNS_TOPIC
           Value: !Ref 'PipelineSNSTopic'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__MEDIAINFO__PATH
@@ -333,6 +335,21 @@ Resources:
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__SOLR__URL
           Value: !Ref 'SolrUrl'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__STREAMING__SERVER
+          Value: aws
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__STREAMING__SIGNING_KEY
+          Value: !Ref 'CloudFrontKey'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__STREAMING__SIGNING_KEY_ID
+          Value: !Ref 'CloudFrontKeyId'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__STREAMING__HTTP_BASE
+          Value: !Ref 'CloudFrontHttp'
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__STREAMING__RTMP_BASE
+          Value: !Ref 'CloudFrontHttp'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__ZOOKEEPER__CONNECTION_STR
           Value: !Ref 'ZookeeperHosts'

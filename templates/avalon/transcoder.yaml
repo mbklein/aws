@@ -77,7 +77,7 @@ Resources:
                         console.error(err);
                         reply(err);
                       } else  {
-                        reply(null, data.Pipeline.Id + "$OK", { "Arn": data.Pipeline.Arn });
+                        reply(null, data.Pipeline.Id + "$OK", { "Arn": data.Pipeline.Arn, "Id": data.Pipeline.Id });
                       }
                     });
                     break;
@@ -93,7 +93,7 @@ Resources:
                         console.error(err);
                         reply(err);
                       } else {
-                        reply(null, data.Pipeline.Id, { "Arn": data.Pipeline.Arn });
+                        reply(null, data.Pipeline.Id, { "Arn": data.Pipeline.Arn, "Id": data.Pipeline.Id });
                       }
                     });
                     break;
@@ -121,6 +121,10 @@ Resources:
   MasterfileBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
+    CorsConfiguration:
+      CorsRules:
+      - AllowedOrigins: ['*']
+        AllowedMethods: ["GET", "POST", "PUT"]
   DerivativeBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -193,7 +197,7 @@ Resources:
 Outputs:
   Pipeline:
     Description: Transcoding Pipeline
-    Value: !Sub '${StackName}-transcoding-pipeline'
+    Value: !Sub '${TranscodingPipeline.Arn}'
   PipelineSNSTopic:
     Description: SNS Topic for the transcoding pipeline
     Value: !Ref 'PipelineNotification'

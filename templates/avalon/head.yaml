@@ -124,6 +124,20 @@ Parameters:
     Type: String
     Description: The initial administrative user
     Default: 'archivist1@example.com'
+  CloudFrontHttp:
+    Type: String
+    Description: The base URL of the CloudFront distribution to use for HTTP
+  CloudFrontRtmp:
+    Type: String
+    Description: The base URL of the CloudFront distribution to use for HTTP
+  CloudFrontKey:
+    NoEcho: 'true'
+    Type: String
+    Description: The private key to use for signing CloudFront requests
+  CloudFrontKeyId:
+    NoEcho: 'true'
+    Type: String
+    Description: The keypair ID of the CloudFront signing key
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -240,6 +254,10 @@ Resources:
         EmailComments: !Ref 'EmailComments'
         EmailNotifications: !Ref 'EmailNotifications'
         InitialUser: !Ref 'InitialUser'
+        CloudFrontHttp: !Ref 'CloudFrontHttp'
+        CloudFrontRtmp: !Ref 'CloudFrontRtmp'
+        CloudFrontKey: !Ref 'CloudFrontKey'
+        CloudFrontKeyId: !Ref 'CloudFrontKeyId'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/application.yaml'
 Outputs:
   URL:

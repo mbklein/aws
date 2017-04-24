@@ -120,6 +120,20 @@ Parameters:
     Type: String
     Description: The initial administrative user
     Default: 'archivist1@example.com'
+  CloudFrontHttp:
+    Type: String
+    Description: The base URL of the CloudFront distribution to use for HTTP
+  CloudFrontRtmp:
+    Type: String
+    Description: The base URL of the CloudFront distribution to use for HTTP
+  CloudFrontKey:
+    NoEcho: 'true'
+    Type: String
+    Description: The private key to use for signing CloudFront requests
+  CloudFrontKeyId:
+    NoEcho: 'true'
+    Type: String
+    Description: The keypair ID of the CloudFront signing key
 Conditions:
   CreateContinuousDeployment: !Equals [!Ref 'ContinuousDeployment', 'true']
 Resources:
@@ -173,10 +187,12 @@ Resources:
         EmailComments: !Ref 'EmailComments'
         EmailNotifications: !Ref 'EmailNotifications'
         InitialUser: !Ref 'InitialUser'
-        MasterfileBucket: !GetAtt 'transcodingpipeline.Outputs.MasterfileBucket'
-        DerivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
         TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
         PipelineSNSTopic: !GetAtt 'transcodingpipeline.Outputs.PipelineSNSTopic'
+        CloudFrontHttp: !Ref 'CloudFrontHttp'
+        CloudFrontRtmp: !Ref 'CloudFrontRtmp'
+        CloudFrontKey: !Ref 'CloudFrontKey'
+        CloudFrontKeyId: !Ref 'CloudFrontKeyId'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/webapp.yaml'
   workers:
     Type: AWS::CloudFormation::Stack
@@ -215,10 +231,13 @@ Resources:
         EmailComments: !Ref 'EmailComments'
         EmailNotifications: !Ref 'EmailNotifications'
         InitialUser: !Ref 'InitialUser'
-        MasterfileBucket: !GetAtt 'transcodingpipeline.Outputs.MasterfileBucket'
-        DerivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
         TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
         PipelineSNSTopic: !GetAtt 'transcodingpipeline.Outputs.PipelineSNSTopic'
+        EC2Role: !Ref 'EC2Role'
+        CloudFrontHttp: !Ref 'CloudFrontHttp'
+        CloudFrontRtmp: !Ref 'CloudFrontRtmp'
+        CloudFrontKey: !Ref 'CloudFrontKey'
+        CloudFrontKeyId: !Ref 'CloudFrontKeyId'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/worker.yaml'
   DefaultQueue:
     Type: AWS::SQS::Queue
