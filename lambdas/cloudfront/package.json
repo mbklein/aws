@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "cfn-wrapper": "latest",
+    "aws-sdk": "latest"
+  },
+  "description": "AWS Lambda functions to create CloudFront streaming distributions.",
+  "directories": {},
+  "license": "Apache-2.0",
+  "main": "./index.js",
+  "maintainers": [
+    {
+      "name": "mbklein",
+      "email": "mbklein@gmail.com"
+    }
+  ],
+  "name": "cfn-cloudfront",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
+  "version": "0.0.2"
+}

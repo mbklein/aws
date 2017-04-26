@@ -1,6 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Hydra application stack
 Parameters:
+  InfrastructureStack:
+    Type: String
+    Description: Name of the CloudFormation hydra stack supporting this head
   StackName:
     Type: String
     Description: Name of the ElasticBeanstalk environment
@@ -21,6 +24,15 @@ Parameters:
   S3KeyPrefix:
     Type: String
     Description: S3 prefix to deployment artifacts
+  SlackWebhookToken:
+    Type: String
+    Description: Slack generated token for Incoming Webhook
+    NoEcho: 'true'
+    Default: ''
+  SlackWebhookChannel:
+    Type: String
+    Description: Slack channel for posting notifications
+    Default: ''
   WebappMinSize:
     Type: Number
     Description: Minimum number of instances
@@ -77,12 +89,6 @@ Parameters:
     Type: String
     Description: Password for Database
     NoEcho: 'true'
-  RDSHostname:
-    Type: String
-    Description: Hostname for RDS Database
-  RDSPort:
-    Type: String
-    Description: Database Port
   QueuePrefix:
     Type: String
     Description: SQS Queue prefix
@@ -98,9 +104,6 @@ Parameters:
   WorkerHealthReportingSystemType:
     Type: String
     Description: Health reporting system
-  BeanstalkSNSTopic:
-    Type: String
-    Description: SNS Topic for Beanstalk application to write change events to
   ContinuousDeployment:
     Type: String
     Description: Configure continuous deployment for the webapp and workers?
@@ -120,13 +123,10 @@ Parameters:
     Type: String
     Description: The initial administrative user
     Default: 'archivist1@example.com'
-  CloudFrontHttp:
+  ConfigurationBucket:
     Type: String
-    Description: The base URL of the CloudFront distribution to use for HTTP
-  CloudFrontRtmp:
-    Type: String
-    Description: The base URL of the CloudFront distribution to use for HTTP
-  CloudFrontKey:
+    Description: The bucket to use for secure configs.
+  CloudFrontKeyFile:
     NoEcho: 'true'
     Type: String
     Description: The private key to use for signing CloudFront requests
@@ -134,6 +134,12 @@ Parameters:
     NoEcho: 'true'
     Type: String
     Description: The keypair ID of the CloudFront signing key
+  TrustedSigner:
+    Type: String
+    Description: Trusted Signer ID for signing URLs
+  PriceClass:
+    Type: String
+    Description: Price class of CloudFront distribution
 Conditions:
   CreateContinuousDeployment: !Equals [!Ref 'ContinuousDeployment', 'true']
 Resources:
@@ -150,6 +156,49 @@ Resources:
       SourceBundle:
         S3Bucket: !Ref 'S3BucketEB'
         S3Key: !Ref 'S3Key'
+  slack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        SlackWebhookToken: !Ref 'SlackWebhookToken'
+        SlackWebhookChannel: !Ref 'SlackWebhookChannel'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/slack.yaml'
+  database:
+    Type: Custom::DatabaseSchema
+    Version: '1.0'
+    Properties:
+      ServiceToken:
+        Fn::ImportValue: !Sub '${InfrastructureStack}-createdatabase-index-ServiceToken'
+      DBName: !Ref 'RDSDatabaseName'
+      DBUser: !Ref 'RDSUsername'
+      DBPassword: !Ref 'RDSPassword'
+  distribution:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Ref 'StackName'
+        S3Bucket: !Ref 'S3Bucket'
+        S3KeyPrefix: !Ref 'S3KeyPrefix'
+        TrustedSigner: !Ref 'TrustedSigner'
+        PriceClass: !Ref 'PriceClass'
+        DerivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
+        HostedZoneName: !Ref 'HostedZoneName'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/cloudfront.yaml'
+  ConfigurationBucketAccess:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref 'ConfigurationBucket'
+      PolicyDocument:
+        Statement:
+        - Effect: "Allow"
+          Resource:
+          - !Sub 'arn:aws:s3:::${ConfigurationBucket}'
+          - !Sub 'arn:aws:s3:::${ConfigurationBucket}/*'
+          Principal:
+          - AWS: !GetAtt 'EC2Role.Arn'
+          Action:
+          - 's3:Get*'
+          - 's3:List*'
   webapp:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -157,28 +206,49 @@ Resources:
         StackName: !Ref 'StackName'
         ApplicationName: !Ref 'HydraApplication'
         VersionLabel: !Ref 'HydraApplicationVersion'
-        KeyName: !Sub '${KeyName}'
+        KeyName: !Ref 'KeyName'
         MinSize: !Ref 'WebappMinSize'
         MaxSize: !Ref 'WebappMaxSize'
-        PublicSubnets: !Join [',', !Ref 'PublicSubnets']
-        PrivateSubnets: !Join [',', !Ref 'PrivateSubnets']
-        SecurityGroups: !Join [',', !Ref 'SecurityGroups']
-        LBSecurityGroups: !Join [',', !Ref 'LBSecurityGroups']
-        HostedZoneName: !Ref 'HostedZoneName'
+        PublicSubnets:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-vpc-PublicSubnets'
+        PrivateSubnets:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-vpc-PrivateSubnets'
+        SecurityGroups:
+          Fn::Join:
+          - ','
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-sg-Default'
+            - Fn::ImportValue: !Sub '${InfrastructureStack}-sg-Webapp'
+        LBSecurityGroups:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-sg-WebappLb'
+        HostedZoneName:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-dns-PublicZoneName'
         SecretKeyBase: !Ref 'SecretKeyBase'
-        FcrepoUrl: !Ref 'FcrepoUrl'
-        SolrUrl: !Ref 'SolrUrl'
-        ZookeeperHosts: !Ref 'ZookeeperHosts'
-        RedisHost: !Ref 'RedisHost'
-        RedisPort: !Ref 'RedisPort'
+        FcrepoUrl:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-fcrepo-URL'
+        SolrUrl:
+          Fn::Join:
+          - ''
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-solr-URL'
+            - !Ref 'AWS::StackName'
+        ZookeeperHosts:
+          Fn::Join:
+          - '/'
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-zk-EndpointAddress'
+            - configs
+        RedisHost:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-redis-EndpointAddress'
+        RedisPort:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-redis-EndpointPort'
         RDSDatabaseName: !Ref 'RDSDatabaseName'
         RDSUsername: !Ref 'RDSUsername'
         RDSPassword: !Ref 'RDSPassword'
-        RDSHostname: !Ref 'RDSHostname'
-        RDSPort: !Ref 'RDSPort'
+        RDSHostname:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-db-EndpointAddress'
+        RDSPort:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-db-EndpointPort'
         QueuePrefix: !Ref 'QueuePrefix'
         DefaultQueue: !Ref 'DefaultQueue'
-        BeanstalkSNSTopic: !Ref 'BeanstalkSNSTopic'
+        BeanstalkSNSTopic: !GetAtt 'slack.Outputs.BeanstalkSNSTopic'
         InstanceType: !Ref 'WebappInstanceType'
         HealthReportingSystemType: !Ref 'WebappHealthReportingSystemType'
         IamInstanceProfile: !GetAtt 'EC2InstanceProfile.Arn'
@@ -189,9 +259,9 @@ Resources:
         InitialUser: !Ref 'InitialUser'
         TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
         PipelineSNSTopic: !GetAtt 'transcodingpipeline.Outputs.PipelineSNSTopic'
-        CloudFrontHttp: !Ref 'CloudFrontHttp'
-        CloudFrontRtmp: !Ref 'CloudFrontRtmp'
-        CloudFrontKey: !Ref 'CloudFrontKey'
+        CloudFrontHttp: !GetAtt 'distribution.Outputs.HTTP'
+        CloudFrontRtmp: !GetAtt 'distribution.Outputs.RTMP'
+        CloudFrontKey: !Sub 's3://${ConfigurationBucket}/cloudfront/${CloudFrontKeyFile}'
         CloudFrontKeyId: !Ref 'CloudFrontKeyId'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/webapp.yaml'
   workers:
@@ -201,29 +271,50 @@ Resources:
         StackName: !Ref 'StackName'
         ApplicationName: !Ref 'HydraApplication'
         VersionLabel: !Ref 'HydraApplicationVersion'
-        KeyName: !Sub '${KeyName}'
+        KeyName: !Ref 'KeyName'
         MinSize: !Ref 'WorkerMinSize'
         MaxSize: !Ref 'WorkerMaxSize'
-        PublicSubnets: !Join [',', !Ref 'PublicSubnets']
-        PrivateSubnets: !Join [',', !Ref 'PrivateSubnets']
-        SecurityGroups: !Join [',', !Ref 'SecurityGroups']
-        LBSecurityGroups: !Join [',', !Ref 'LBSecurityGroups']
-        HostedZoneName: !Ref 'HostedZoneName'
+        PublicSubnets:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-vpc-PublicSubnets'
+        PrivateSubnets:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-vpc-PrivateSubnets'
+        SecurityGroups:
+          Fn::Join:
+          - ','
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-sg-Default'
+            - Fn::ImportValue: !Sub '${InfrastructureStack}-sg-Webapp'
+        LBSecurityGroups:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-sg-WebappLb'
+        HostedZoneName:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-dns-PublicZoneName'
         SecretKeyBase: !Ref 'SecretKeyBase'
-        FcrepoUrl: !Ref 'FcrepoUrl'
-        SolrUrl: !Ref 'SolrUrl'
-        ZookeeperHosts: !Ref 'ZookeeperHosts'
-        RedisHost: !Ref 'RedisHost'
-        RedisPort: !Ref 'RedisPort'
+        FcrepoUrl:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-fcrepo-URL'
+        SolrUrl:
+          Fn::Join:
+          - ''
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-solr-URL'
+            - !Ref 'AWS::StackName'
+        ZookeeperHosts:
+          Fn::Join:
+          - '/'
+          - - Fn::ImportValue: !Sub '${InfrastructureStack}-zk-EndpointAddress'
+            - configs
+        RedisHost:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-redis-EndpointAddress'
+        RedisPort:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-redis-EndpointPort'
         RDSDatabaseName: !Ref 'RDSDatabaseName'
         RDSUsername: !Ref 'RDSUsername'
         RDSPassword: !Ref 'RDSPassword'
-        RDSHostname: !Ref 'RDSHostname'
-        RDSPort: !Ref 'RDSPort'
+        RDSHostname:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-db-EndpointAddress'
+        RDSPort:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-db-EndpointPort'
         QueuePrefix: !Ref 'QueuePrefix'
         DefaultQueue: !Ref 'DefaultQueue'
         DefaultQueueName: !GetAtt 'DefaultQueue.QueueName'
-        BeanstalkSNSTopic: !Ref 'BeanstalkSNSTopic'
+        BeanstalkSNSTopic: !GetAtt 'slack.Outputs.BeanstalkSNSTopic'
         IamInstanceProfile: !GetAtt 'EC2InstanceProfile.Arn'
         InstanceType: !Ref 'WorkerInstanceType'
         HealthReportingSystemType: !Ref 'WorkerHealthReportingSystemType'
@@ -234,9 +325,9 @@ Resources:
         TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
         PipelineSNSTopic: !GetAtt 'transcodingpipeline.Outputs.PipelineSNSTopic'
         EC2Role: !Ref 'EC2Role'
-        CloudFrontHttp: !Ref 'CloudFrontHttp'
-        CloudFrontRtmp: !Ref 'CloudFrontRtmp'
-        CloudFrontKey: !Ref 'CloudFrontKey'
+        CloudFrontHttp: !GetAtt 'distribution.Outputs.HTTP'
+        CloudFrontRtmp: !GetAtt 'distribution.Outputs.RTMP'
+        CloudFrontKey: !Sub 's3://${ConfigurationBucket}/cloudfront/${CloudFrontKeyFile}'
         CloudFrontKeyId: !Ref 'CloudFrontKeyId'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/worker.yaml'
   DefaultQueue:

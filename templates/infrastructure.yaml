@@ -18,29 +18,33 @@ Parameters:
     Type: String
     Description: Existing Route53 zone; used to create a public DNS record for the
       web application
-  FcrepoDatabaseUsername:
+  DatabaseUsername:
     Type: String
     Description: Database Root Username
     Default: ebroot
-  FcrepoDatabasePassword:
+  DatabasePassword:
     Type: String
     Description: Password for the DB Root User
     NoEcho: 'true'
-  FcrepoDatabaseName:
-    Type: String
-    Description: Name of the database
-    Default: fcrepo
-  FcrepoDatabaseStorageSize:
+  DatabaseStorageSize:
     Type: Number
     Description: Size of DB in Gigs
     Default: '5'
-  FcrepoDatabaseMultiAZ:
+  DatabaseMultiAZ:
     Type: String
     Description: Launch the database in multiple availability zones
     AllowedValues:
     - 'true'
     - 'false'
     Default: 'true'
+  FcrepoDatabaseUser:
+    Type: String
+    Description: Database Root Username
+    Default: fcrepo
+  FcrepoDatabasePassword:
+    Type: String
+    Description: Password for the Fedora User
+    NoEcho: 'true'
   FcrepoBinaryBucket:
     Type: String
     Description: S3 Bucket for Fedora's binary object store
@@ -84,7 +88,7 @@ Parameters:
     Type: String
     Description: The EC2 instance type
     Default: t2.nano
-  FcrepoDatabaseInstanceType:
+  DatabaseInstanceType:
     Type: String
     Description: Instance type to launch
     Default: db.t2.large
@@ -132,7 +136,9 @@ Metadata:
     - Label:
         default: Resources
       Parameters:
-      - FcrepoDatabaseInstanceType
+      - DatabaseInstanceType
+      - DatabaseUsername
+      - DatabasePassword
       - RedisInstanceType
       - FcrepoInstanceType
       - SolrCloudSize
@@ -142,8 +148,6 @@ Metadata:
         default: Fedora Repository Configuration
       Parameters:
       - S3FedoraFilename
-      - FcrepoDatabaseUsername
-      - FcrepoDatabasePassword
     - Label:
         default: OpenVPN Configuration
       Parameters:
@@ -153,6 +157,7 @@ Metadata:
 Resources:
   vpc:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Retain
     Properties:
       Parameters:
         StackName: !Ref 'AWS::StackName'
@@ -161,6 +166,7 @@ Resources:
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/vpc.yaml'
   securitygroups:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Retain
     Properties:
       Parameters:
         StackName: !Ref 'AWS::StackName'
@@ -197,10 +203,10 @@ Resources:
         MaxSize: !Ref 'FcrepoMaxSize'
         HostedZoneName: !GetAtt 'vpc.Outputs.HostedZoneName'
         InstanceType: !Ref 'FcrepoInstanceType'
-        RDSDatabaseName: !GetAtt 'fcrepodb.Outputs.DatabaseName'
-        RDSHostname: !GetAtt 'fcrepodb.Outputs.EndpointAddress'
-        RDSPort: !GetAtt 'fcrepodb.Outputs.EndpointPort'
-        RDSUsername: !Ref 'FcrepoDatabaseUsername'
+        RDSDatabaseName: !GetAtt 'fcrepodb.DatabaseName'
+        RDSHostname: !GetAtt 'fcrepodb.EndpointAddress'
+        RDSPort: !GetAtt 'fcrepodb.EndpointPort'
+        RDSUsername: !Ref 'FcrepoDatabaseUser'
         RDSPassword: !Ref 'FcrepoDatabasePassword'
         BinaryBucket: !Ref 'FcrepoBinaryBucket'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/fcrepo.yaml'
@@ -231,19 +237,62 @@ Resources:
         InstanceType: !Ref 'RedisInstanceType'
         HostedZoneName: !GetAtt 'vpc.Outputs.HostedZoneName'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/redis.yaml'
-  fcrepodb:
+  database:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
         SubnetID: !GetAtt 'vpc.Outputs.PrivateSubnets'
-        SecurityGroups: !GetAtt 'securitygroups.Outputs.FcrepoDatabase'
-        MasterUsername: !Ref 'FcrepoDatabaseUsername'
-        MasterUserPassword: !Ref 'FcrepoDatabasePassword'
-        DatabaseName: !Ref 'FcrepoDatabaseName'
-        AllocatedStorage: !Ref 'FcrepoDatabaseStorageSize'
-        MultiAZDatabase: !Ref 'FcrepoDatabaseMultiAZ'
-        DBInstanceClass: !Ref 'FcrepoDatabaseInstanceType'
+        SecurityGroups: !GetAtt 'securitygroups.Outputs.Database'
+        MasterUsername: !Ref 'DatabaseUsername'
+        MasterUserPassword: !Ref 'DatabasePassword'
+        AllocatedStorage: !Ref 'DatabaseStorageSize'
+        MultiAZDatabase: !Ref 'DatabaseMultiAZ'
+        DBInstanceClass: !Ref 'DatabaseInstanceType'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/postgres.yaml'
+  lambdaenv:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Ref 'AWS::StackName'
+        S3Bucket: !Ref 'S3Bucket'
+        S3KeyPrefix: !Ref 'S3KeyPrefix'
+        Package: 'lambdaenvironment'
+        AllowedActions: 'lambda:*'
+        Timeout: '10'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/lambdafunction.yaml'
+  createschema:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Ref 'AWS::StackName'
+        S3Bucket: !Ref 'S3Bucket'
+        S3KeyPrefix: !Ref 'S3KeyPrefix'
+        Package: 'createdatabase'
+        SubnetID: !GetAtt 'vpc.Outputs.PublicSubnets'
+        SecurityGroups: !GetAtt 'securitygroups.Outputs.DatabaseClient'
+        AllowedActions: 'rds:*'
+        Timeout: '60'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/lambdafunction.yaml'
+  createschemaconfig:
+    Type: Custom::DatabaseSchema
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt 'lambdaenv.Outputs.ServiceToken'
+      FunctionName: !GetAtt 'createschema.Outputs.ServiceToken'
+      Environment:
+        DBHostname: !GetAtt 'database.Outputs.EndpointAddress'
+        DBPort: !GetAtt 'database.Outputs.EndpointPort'
+        MasterUser: !Ref 'DatabaseUsername'
+        MasterPassword: !Ref 'DatabasePassword'
+  fcrepodb:
+    Type: Custom::DatabaseSchema
+    DependsOn: createschemaconfig
+    Version: '1.0'
+    Properties:
+      ServiceToken: !GetAtt 'createschemaconfig.ServiceToken'
+      DBName: 'fcrepo'
+      DBUser: !Ref 'FcrepoDatabaseUser'
+      DBPassword: !Ref 'FcrepoDatabasePassword'
   mail:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -285,3 +334,13 @@ Outputs:
     Value: !Sub '${AWS::StackName}.${PublicZoneName}'
     Export:
       Name: !Sub '${AWS::StackName}-dns-PublicZoneName'
+  DatabaseAddress:
+    Description: Postgres endpoint address
+    Value: !GetAtt 'database.Outputs.EndpointAddress'
+    Export:
+      Name: !Sub '${AWS::StackName}-db-EndpointAddress'
+  DatabasePort:
+    Description: Postgres endpoint port
+    Value: !GetAtt 'database.Outputs.EndpointPort'
+    Export:
+      Name: !Sub '${AWS::StackName}-db-EndpointPort'

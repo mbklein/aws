@@ -5,9 +5,6 @@ Parameters:
     Type: List<AWS::EC2::Subnet::Id>
     Description: List of an existing subnet IDs to use for the load balancer and auto
       scaling group
-  DatabaseName:
-    Type: String
-    Description: Name of the database
   MasterUsername:
     Type: String
     Description: Database Root Username
@@ -32,7 +29,6 @@ Resources:
     Type: AWS::RDS::DBInstance
     DeletionPolicy: Snapshot
     Properties:
-      DBName: !Ref 'DatabaseName'
       Engine: postgres
       MasterUsername: !Ref 'MasterUsername'
       MasterUserPassword: !Ref 'MasterUserPassword'
@@ -53,6 +49,3 @@ Outputs:
   EndpointPort:
     Description: Postgres endpoint port
     Value: !GetAtt 'DBInstance.Endpoint.Port'
-  DatabaseName:
-    Description: Name of the database
-    Value: !Ref 'DatabaseName'

@@ -5,9 +5,10 @@ S3_KEY=${S3_KEY:-infrastructure/current}
 
 cd lambdas
 for f in `find . -type d -depth 1`; do
+  output=$(echo $f | tr -dc '[:alnum:]-:')
   cd $f
   npm install
-  zip -r ../$f.zip .
+  zip -r ../$output.zip .
   cd ..
 done
 cd ..

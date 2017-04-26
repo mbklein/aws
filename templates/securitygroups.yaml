@@ -45,32 +45,35 @@ Resources:
       Tags:
       - Key: Name
         Value: !Sub '${StackName}-webapp-lb'
+  DatabaseClientSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Database client security group
+      VpcId: !Ref 'VPC'
+      Tags:
+      - Key: Name
+        Value: !Sub '${StackName}-db-client'
   DatabaseSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: RDS security group
       VpcId: !Ref 'VPC'
       SecurityGroupIngress:
+      - SourceSecurityGroupId: !Ref 'FedoraSecurityGroup'
+        IpProtocol: tcp
+        FromPort: '5432'
+        ToPort: '5432'
       - SourceSecurityGroupId: !Ref 'WebappSecurityGroup'
+        IpProtocol: tcp
+        FromPort: '5432'
+        ToPort: '5432'
+      - SourceSecurityGroupId: !Ref 'DatabaseClientSecurityGroup'
         IpProtocol: tcp
         FromPort: '5432'
         ToPort: '5432'
       Tags:
       - Key: Name
         Value: !Sub '${StackName}-db'
-  FcrepoDatabaseSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Fedora RDS security group
-      VpcId: !Ref 'VPC'
-      SecurityGroupIngress:
-      - SourceSecurityGroupId: !Ref 'FedoraSecurityGroup'
-        IpProtocol: tcp
-        FromPort: '5432'
-        ToPort: '5432'
-      Tags:
-      - Key: Name
-        Value: !Sub '${StackName}-fcrepodb'
   RedisSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -281,11 +284,11 @@ Outputs:
     Value: !Ref 'DatabaseSecurityGroup'
     Export:
       Name: !Sub '${StackName}-sg-Database'
-  FcrepoDatabase:
+  DatabaseClient:
     Description: Security Group ID for the database security group
-    Value: !Ref 'FcrepoDatabaseSecurityGroup'
+    Value: !Ref 'DatabaseClientSecurityGroup'
     Export:
-      Name: !Sub '${StackName}-sg-FcrepoDatabase'
+      Name: !Sub '${StackName}-sg-DatabaseClient'
   Redis:
     Description: Security Group ID for the redis security group
     Value: !Ref 'RedisSecurityGroup'
