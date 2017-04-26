@@ -1,0 +1,275 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Avalon CloudFront Origin Access Identity
+Parameters:
+  StackName:
+    Type: String
+    Description: Name of the application stack (for tagging and naming)
+  TrustedSigner:
+    Type: String
+    Description: Trusted Signer ID for signing URLs
+  PriceClass:
+    Type: String
+    Description: Price class of CloudFront distribution
+  DerivativeBucket:
+    Type: String
+    Description: Bucket for Derivatives
+  CloudFrontHttp:
+    Type: String
+    Description: The base URL of the CloudFront distribution to use for HTTP
+  CloudFrontRtmp:
+    Type: String
+    Description: The base URL of the CloudFront distribution to use for HTTP
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: !Sub '${AWS::StackName}-cf-cloudfront'
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - cloudfront:*
+            - iam:PassRole
+            Resource:
+            - "*"
+  OAIFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          exports.handler = (event, context, callback) => {
+            var response = require('cfn-response');
+
+            reply = function(err, physicalId, data) {
+              if (data == null) data = {};
+              data.LogicalResourceId = event.LogicalResourceId;
+              data.RequestId = event.RequestId;
+              data.StackId = event.StackId;
+
+              if (err) {
+                response.send(event, context, response.FAILED, { "Error": "Error: " + err });
+              } else {
+                response.send(event, context, response.SUCCESS, data, physicalId);
+              }
+            }
+
+            console.log('REQUEST RECEIVED:', JSON.stringify(event));
+            var physicalResourceId = event.PhysicalResourceId;
+            var re = /^(.+)\$OK$/;
+            if ((physicalResourceId != null) && re.test(physicalResourceId)) {
+              physicalResourceId = physicalResourceId.match(re)[1];
+            }
+            console.log('PHYSICAL RESOURCE ID:', physicalResourceId);
+            try {
+                var AWS = require('aws-sdk');
+                var cloudfront = new AWS.CloudFront();
+
+                switch (event.RequestType) {
+                  case "Create":
+                    var params = {
+                      CloudFrontOriginAccessIdentityConfig: {
+                        CallerReference: Math.random().toString(36).substring(7),
+                        Comment: 'Avalon Origin Access Identity'
+                      }
+                    };
+                    cloudfront.createCloudFrontOriginAccessIdentity(params, function (err, data) {
+                      if (err) console.log(err, err.stack); // an error occurred
+                      else     reply(null, data.CloudFrontOriginAccessIdentity.Id, { "S3CanonicalUserId": data.S3CanonicalUserId });
+                    });
+                    break;
+                  case "Delete":
+                    if (physicalResourceId == null) {
+                      reply(null, physicalResourceId, { Id: physicalResourceId });
+                      return;
+                    }
+
+                    cloudfront.getCloudFrontOriginAccessIdentity({ Id: physicalResourceId }, function(err, data) {
+                      if (err) console.error(err);
+                      else cloudfront.deleteCloudFrontOriginAccessIdentity({ Id: physicalResourceId, IfMatch: data.ETag }, function(err, data) {
+                        if (err) console.error(err);
+                        reply(err, physicalResourceId, {});
+                      });
+                    });
+
+                    break;
+                  default:
+                    reply("Unknown request type: " + event.RequestType);
+                }
+            } catch(err) {
+                reply(err);
+            }
+          };
+      Handler: index.handler
+      Runtime: nodejs4.3
+      Timeout: '10'
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+  CloudFrontOAI:
+    Type: Custom::CloudFrontOAI
+    Version: '1.0'
+    DependsOn: "OAIFunction"
+    Properties:
+      ServiceToken: !GetAtt 'OAIFunction.Arn'
+      Name: !Sub '${StackName}-cloudfront-oai'
+  RTMPFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: "CloudFrontOAI"
+    Properties:
+      Code:
+        ZipFile: |
+          exports.handler = (event, context, callback) => {
+            var response = require('cfn-response');
+
+            reply = function(err, physicalId, data) {
+              if (data == null) data = {};
+              data.LogicalResourceId = event.LogicalResourceId;
+              data.RequestId = event.RequestId;
+              data.StackId = event.StackId;
+
+              if (err) {
+                response.send(event, context, response.FAILED, { "Error": "Error: " + err });
+              } else {
+                response.send(event, context, response.SUCCESS, data, physicalId);
+              }
+            }
+
+            console.log('REQUEST RECEIVED:', JSON.stringify(event));
+            console.log('PROCESS:', process.env);
+            var physicalResourceId = event.PhysicalResourceId;
+            var re = /^(.+)\$OK$/;
+            if ((physicalResourceId != null) && re.test(physicalResourceId)) {
+              physicalResourceId = physicalResourceId.match(re)[1];
+            }
+            console.log('PHYSICAL RESOURCE ID:', physicalResourceId);
+            try {
+              var AWS = require('aws-sdk');
+              var cloudfront = new AWS.CloudFront();
+
+              switch (event.RequestType) {
+                case "Create":
+                  var params = {
+                    StreamingDistributionConfig: { /* required */
+                      CallerReference: 'Math.random().toString(36).substring(7)', /* required */
+                      Comment: 'Avalon RTMP Streaming Config', /* required */
+                      Enabled: true, /* required */
+                      S3Origin: { /* required */
+                        DomainName: process.env.DerivativeBucket, /* required */
+                        OriginAccessIdentity: 'origin-access-identity/cloudfront/' + process.env.CloudFrontOAI /* required */
+                      },
+                      TrustedSigners: { /* required */
+                        Enabled: true, /* required */
+                        Quantity: 1, /* required */
+                        Items: [
+                          process.env.TrustedSigner,
+                        ]
+                      },
+                      Aliases: {
+                        Quantity: 1, /* required */
+                        Items: [
+                          process.env.CloudFrontRtmp,
+                          /* more items */
+                        ]
+                      },
+                      Logging: {
+                        Bucket: 'STRING_VALUE', /* required */
+                        Enabled: false, /* required */
+                        Prefix: 'STRING_VALUE' /* required */
+                      },
+                      PriceClass: process.env.PriceClass
+                    }
+                  };
+                  cloudfront.createStreamingDistribution(params, function(err, data) {
+                    if (err) console.log(err, err.stack); // an error occurred
+                    else     reply(null, data.StreamingDistribution.Id, {"ARN": data.StreamingDistribution.ARN} );           // successful response
+                  });
+                  break;
+                case "Delete":
+                  reply("Delete not yet implemented");
+                default:
+                  reply("Unknown request type: " + event.RequestType);
+              }
+            } catch(err) {
+                reply(err);
+            }
+          };
+
+      Handler: index.handler
+      Runtime: nodejs4.3
+      Timeout: '10'
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Environment:
+        Variables:
+          PriceClass: !Ref 'PriceClass'
+          DerivativeBucket: !Ref 'DerivativeBucket'
+          TrustedSigner: !Ref 'TrustedSigner'
+          CloudFrontRtmp: !Ref 'CloudFrontRtmp'
+          CloudFrontOAI: !Ref 'CloudFrontOAI'
+  RTMPDistribution:
+    Type: Custom::CloudFrontDistribution
+    Version: '1.0'
+    DependsOn: "RTMPFunction"
+    Properties:
+      ServiceToken: !GetAtt 'RTMPFunction.Arn'
+      Name: !Sub '${StackName}-rtmp-distribution'
+  HLSDistribution:
+    Type: AWS::CloudFront::Distribution
+    DependsOn: "CloudFrontOAI"
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Ref 'DerivativeBucket'
+          Id: !Sub '${StackName}-derivative-origin-hls'
+          S3OriginConfig:
+            OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI}'
+        Enabled: 'true'
+        Comment: Avalon HLS distribution
+        DefaultRootObject: index.html
+        Aliases:
+        - !Ref 'CloudFrontHttp'
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          TargetOriginId: !Sub '${StackName}-derivative-origin-hls'
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          TrustedSigners:
+          - !Ref 'TrustedSigner'
+          ViewerProtocolPolicy: allow-all
+        PriceClass: !Ref 'PriceClass'
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'
+Outputs:
+  OAI:
+    Description: CloudFront OriginAccessIdentity
+    Value: !Ref 'CloudFrontOAI'
+  RTMP:
+    Description: CloudFront RTMP Distribution
+    Value: !Ref 'RTMPDistribution'
+  HLS:
+    Description: CloudFront RTMP Distribution
+    Value: !Ref 'HLSDistribution'

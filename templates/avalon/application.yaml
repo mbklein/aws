@@ -303,6 +303,17 @@ Resources:
       Parameters:
         StackName: !Ref 'StackName'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/transcoder.yaml'
+  cloudfrontdistributions:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        StackName: !Ref 'StackName'
+        TrustedSigner: !Ref 'TrustedSigner'
+        PriceClass: !Ref 'PriceClass'
+        DerivativeBucket: !Ref 'DerivativeBucket'
+        CloudFrontHttp: !Ref 'CloudFrontHttp'
+        CloudFrontRtmp: !Ref 'CloudFrontRtmp'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/cloudfront.yaml'
 Outputs:
   URL:
     Description: URL of the AWS Elastic Beanstalk Environment
