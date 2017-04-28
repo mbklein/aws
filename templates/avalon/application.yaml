@@ -247,7 +247,7 @@ Resources:
         EmailComments: !Ref 'EmailComments'
         EmailNotifications: !Ref 'EmailNotifications'
         InitialUser: !Ref 'InitialUser'
-        TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
+        TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.PipelineId'
         PipelineSNSTopic: !GetAtt 'transcodingpipeline.Outputs.PipelineSNSTopic'
         CloudFrontHttp: !GetAtt 'distribution.Outputs.HTTP'
         CloudFrontRtmp: !GetAtt 'distribution.Outputs.RTMP'
@@ -313,7 +313,7 @@ Resources:
         EmailComments: !Ref 'EmailComments'
         EmailNotifications: !Ref 'EmailNotifications'
         InitialUser: !Ref 'InitialUser'
-        TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
+        TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.PipelineId'
         PipelineSNSTopic: !GetAtt 'transcodingpipeline.Outputs.PipelineSNSTopic'
         CloudFrontHttp: !GetAtt 'distribution.Outputs.HTTP'
         CloudFrontRtmp: !GetAtt 'distribution.Outputs.RTMP'
@@ -361,6 +361,26 @@ Resources:
             - !Sub 'arn:aws:s3:::${transcodingpipeline.Outputs.MasterfileBucket}/*'
             - !Sub 'arn:aws:s3:::${transcodingpipeline.Outputs.DerivativeBucket}/*'
         PolicyName: !Sub '${AWS::StackName}-TranscodingBucketAccess'
+      - PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Action:
+            - elastictranscoder:List*
+            - elastictranscoder:Read*
+            Resource:
+            - arn:aws:elastictranscoder:us-east-1:845225713889:pipeline/1493338287078-cclczy
+            Effect: Allow
+          - Action:
+            - elastictranscoder:ListPresets
+            - elastictranscoder:ReadPreset
+            - elastictranscoder:ListJobs
+            - elastictranscoder:CreateJob
+            - elastictranscoder:ReadJob
+            - elastictranscoder:CancelJob
+            Resource:
+            - "*"
+            Effect: Allow
+        PolicyName: !Sub '${AWS::StackName}-TranscodingPipelineAccess'
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:

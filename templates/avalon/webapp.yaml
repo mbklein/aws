@@ -262,7 +262,7 @@ Resources:
           Value: !Ref 'AWS::Region'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: BUNDLE_WITH
-          Value: postgres
+          Value: aws:postgres
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: BUNDLE_WITHOUT
           Value: development:test
@@ -321,6 +321,9 @@ Resources:
           OptionName: SETTINGS__INITIAL_USER
           Value: !Ref 'InitialUser'
         - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__ENCODING__ENGINE_ADAPTER
+          Value: elastic_transcoder
+        - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__ENCODING__PIPELINE
           Value: !Ref 'TranscodingPipeline'
         - Namespace: aws:elasticbeanstalk:application:environment
@@ -349,7 +352,7 @@ Resources:
           Value: !Ref 'CloudFrontHttp'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__STREAMING__RTMP_BASE
-          Value: !Ref 'CloudFrontHttp'
+          Value: !Ref 'CloudFrontRtmp'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__ZOOKEEPER__CONNECTION_STR
           Value: !Ref 'ZookeeperHosts'

@@ -140,7 +140,7 @@ Resources:
           Value: !Ref 'AWS::Region'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: BUNDLE_WITH
-          Value: postgres
+          Value: aws:postgres
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: BUNDLE_WITHOUT
           Value: development:test
@@ -175,6 +175,9 @@ Resources:
           OptionName: SECRET_KEY_BASE
           Value: !Ref 'SecretKeyBase'
         - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: PROCESS_ACTIVE_ELASTIC_JOBS
+          Value: true
+        - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__ACTIVE_JOB_QUEUE__URL
           Value: !Ref 'DefaultQueue'
         - Namespace: aws:elasticbeanstalk:application:environment
@@ -202,10 +205,13 @@ Resources:
           OptionName: SETTINGS__INITIAL_USER
           Value: !Ref 'InitialUser'
         - Namespace: aws:elasticbeanstalk:application:environment
-          OptionName: SETTINGS__TRANSCODING__PIPELINE
+          OptionName: SETTINGS__ENCODING__ENGINE_ADAPTER
+          Value: elastic_transcoder
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SETTINGS__ENCODING__PIPELINE
           Value: !Ref 'TranscodingPipeline'
         - Namespace: aws:elasticbeanstalk:application:environment
-          OptionName: SETTINGS__TRANSCODING__SNS_TOPIC
+          OptionName: SETTINGS__ENCODING__SNS_TOPIC
           Value: !Ref 'PipelineSNSTopic'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__MEDIAINFO__PATH
@@ -236,7 +242,7 @@ Resources:
           Value: !Ref 'CloudFrontHttp'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__STREAMING__RTMP_BASE
-          Value: !Ref 'CloudFrontHttp'
+          Value: !Ref 'CloudFrontRtmp'
         - Namespace: aws:elasticbeanstalk:application:environment
           OptionName: SETTINGS__WORKER
           Value: 'true'

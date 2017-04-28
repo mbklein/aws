@@ -100,9 +100,12 @@ Resources:
         Progressing: !Ref 'PipelineNotification'
         Warning: !Ref 'PipelineNotification'
 Outputs:
-  Pipeline:
-    Description: Transcoding Pipeline
+  PipelineArn:
+    Description: Transcoding Pipeline ARN
     Value: !Sub '${TranscodingPipeline.Arn}'
+  PipelineId:
+    Description: Transcoding Pipeline ID
+    Value: !Sub '${TranscodingPipeline.Id}'
   PipelineSNSTopic:
     Description: SNS Topic for the transcoding pipeline
     Value: !Ref 'PipelineNotification'
