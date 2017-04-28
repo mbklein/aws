@@ -1,17 +1,19 @@
 const wrapper = require('cfn-wrapper');
 const AWS = require('aws-sdk');
+const uuid = require('uuid/v4');
+
 exports.wrapper = wrapper($worker = {
   create: (params) => {
     var cloudfront = new AWS.CloudFront();
     var template = {
       CloudFrontOriginAccessIdentityConfig: {
-        CallerReference: Math.random().toString(36).substring(7),
+        CallerReference: uuid(),
         Comment: 'Avalon Origin Access Identity'
       }
     };
     cloudfront.createCloudFrontOriginAccessIdentity(template, (err, data) => {
       if (err) reply(err)
-      else     reply(null, data.CloudFrontOriginAccessIdentity.Id, { "S3CanonicalUserId": data.S3CanonicalUserId });
+      else     reply(null, data.CloudFrontOriginAccessIdentity.Id, { "Id": data.CloudFrontOriginAccessIdentity.Id, "S3CanonicalUserId": data.S3CanonicalUserId });
     });
   },
   update: (params, physicalResourceId) => {

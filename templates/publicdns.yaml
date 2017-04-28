@@ -12,12 +12,12 @@ Resources:
   PublicDNS:
     Type: AWS::Route53::HostedZone
     Properties:
-      Name: !Sub '${SubZone}.${PublicZoneName}'
+      Name: !Sub '${SubZone}.${PublicZoneName}.'
   PublicDNSNameServers:
     Type: AWS::Route53::RecordSet
     Properties:
-      Name: !Sub '${SubZone}.${PublicZoneName}'
-      HostedZoneName: !Ref 'PublicZoneName'
+      Name: !Sub '${SubZone}.${PublicZoneName}.'
+      HostedZoneName: !Sub '${PublicZoneName}.'
       Type: NS
       TTL: '900'
       ResourceRecords: !GetAtt 'PublicDNS.NameServers'

@@ -1,12 +1,13 @@
 const wrapper = require('cfn-wrapper');
 const AWS = require('aws-sdk');
+const uuid = require('uuid/v4');
 
 exports.wrapper = wrapper($worker = {
-  var cloudfront = new AWS.CloudFront();
   create: (params) => {
+    var cloudfront = new AWS.CloudFront();
     var template = {
       StreamingDistributionConfig: {
-        CallerReference: 'Math.random().toString(36).substring(7)',
+        CallerReference: uuid(),
         Comment: 'Avalon RTMP Streaming Config',
         Enabled: true,
         S3Origin: {

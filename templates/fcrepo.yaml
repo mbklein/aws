@@ -203,8 +203,8 @@ Resources:
   EBRecordSet:
     Type: AWS::Route53::RecordSet
     Properties:
-      Name: !Sub '${ResourceName}.${HostedZoneName}'
-      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Sub '${ResourceName}.${HostedZoneName}.'
+      HostedZoneName: !Sub '${HostedZoneName}.'
       Type: CNAME
       TTL: '900'
       ResourceRecords:

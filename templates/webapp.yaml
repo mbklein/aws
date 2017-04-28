@@ -320,8 +320,8 @@ Resources:
   EBRecordSet:
     Type: AWS::Route53::RecordSet
     Properties:
-      Name: !Sub '${StackName}.${HostedZoneName}'
-      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Sub '${StackName}.${HostedZoneName}.'
+      HostedZoneName: !Sub '${HostedZoneName}.'
       Type: A
       AliasTarget:
         DNSName: !GetAtt 'WebappEnvironment.EndpointURL'
@@ -330,8 +330,8 @@ Resources:
   EBWildcardRecordSet:
     Type: AWS::Route53::RecordSet
     Properties:
-      Name: !Sub '*.${StackName}.${HostedZoneName}'
-      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Sub '*.${StackName}.${HostedZoneName}.'
+      HostedZoneName: !Sub '${HostedZoneName}.'
       Type: A
       AliasTarget:
         DNSName: !GetAtt 'WebappEnvironment.EndpointURL'

@@ -20,9 +20,6 @@ Parameters:
   HostedZoneName:
     Description: Route53 zone to create an alias in
     Type: String
-  VpnFqdn:
-    Description: The fully-qualified hostname for the VPN server
-    Type: String
   VpnUser:
     Description: The username for the VPN user
     Type: String
@@ -105,7 +102,7 @@ Resources:
         Value: !Sub '${StackName}-${ResourceName}'
       UserData:
         Fn::Base64: !Sub |
-          public_hostname=${VpnFqdn}
+          public_hostname=vpn.${HostedZoneName}
           admin_user=${VpnUser}
           admin_pw=${VpnPassword}
           reroute_gw=0
@@ -113,8 +110,8 @@ Resources:
   RecordSet:
     Type: AWS::Route53::RecordSet
     Properties:
-      Name: !Sub '${VpnFqdn}.'
-      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Sub 'vpn.${HostedZoneName}.'
+      HostedZoneName: !Sub '${HostedZoneName}.'
       Type: CNAME
       TTL: '900'
       ResourceRecords:

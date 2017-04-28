@@ -4,11 +4,6 @@ Parameters:
   InfrastructureStack:
     Type: String
     Description: Name of the CloudFormation hydra stack supporting this head
-  StackName:
-    Type: String
-    Description: Name of the ElasticBeanstalk environment
-    MinLength: 1
-    MaxLength: 15
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances
@@ -17,13 +12,14 @@ Parameters:
     Description: S3 bucket with cloudformation templates
   S3BucketEB:
     Type: String
-    Description: S3 bucket with the hyku zip
+    Description: S3 bucket with the rails application zip
   S3Key:
     Type: String
-    Description: S3 key to the hyku zip
+    Description: S3 key to the rails application zip
   S3KeyPrefix:
     Type: String
     Description: S3 prefix to deployment artifacts
+    Default: infrastructure/current
   SlackWebhookToken:
     Type: String
     Description: Slack generated token for Incoming Webhook
@@ -36,49 +32,23 @@ Parameters:
   WebappMinSize:
     Type: Number
     Description: Minimum number of instances
+    Default: '1'
   WebappMaxSize:
     Type: Number
     Description: Maximum number of instances
+    Default: '4'
   WorkerMinSize:
     Type: Number
     Description: Minimum number of instances
+    Default: '1'
   WorkerMaxSize:
     Type: Number
     Description: Maximum number of instances
-  PublicSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: List of an existing subnet IDs to use for the load balancer
-  PrivateSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: List of an existing subnet IDs to use for the auto scaling group
-  SecurityGroups:
-    Type: List<AWS::EC2::SecurityGroup::Id>
-    Description: A list of security groups, such as sg-a123fd85.
-  LBSecurityGroups:
-    Type: List<AWS::EC2::SecurityGroup::Id>
-    Description: A list of security groups, such as sg-a123fd85.
-  HostedZoneName:
-    Type: String
-    Description: Route53 zone to create an alias in
+    Default: '4'
   SecretKeyBase:
     Type: String
     Description: Secret key for Rails
     NoEcho: 'true'
-  FcrepoUrl:
-    Type: String
-    Description: URL to Fedora
-  SolrUrl:
-    Type: String
-    Description: URL to Solr
-  ZookeeperHosts:
-    Type: String
-    Description: A list of zookeeper host IP + ports
-  RedisHost:
-    Type: String
-    Description: URL to Redis
-  RedisPort:
-    Type: String
-    Description: Redis Port
   RDSDatabaseName:
     Type: String
     Description: Database name
@@ -95,21 +65,36 @@ Parameters:
   WebappInstanceType:
     Type: String
     Description: The EC2 instance type
+    Default: 't2.large'
   WorkerInstanceType:
     Type: String
     Description: The EC2 instance type
+    Default: 't2.medium'
   WebappHealthReportingSystemType:
     Type: String
     Description: Health reporting system
+    AllowedValues:
+    - enhanced
+    - basic
+    Default: enhanced
   WorkerHealthReportingSystemType:
     Type: String
     Description: Health reporting system
+    AllowedValues:
+    - enhanced
+    - basic
+    Default: enhanced
   ContinuousDeployment:
     Type: String
     Description: Configure continuous deployment for the webapp and workers?
+    AllowedValues:
+    - 'true'
+    - 'false'
+    Default: 'true'
   SSLCertificateId:
     Type: String
     Description: The Amazon Resource Name (ARN) of the SSL certificate
+    Default: ''
   EmailSupport:
     Type: String
     Description: The email address for Support
@@ -146,7 +131,7 @@ Resources:
   HydraApplication:
     Type: AWS::ElasticBeanstalk::Application
     Properties:
-      ApplicationName: !Ref 'StackName'
+      ApplicationName: !Ref 'AWS::StackName'
       Description: Hybox service
   HydraApplicationVersion:
     Type: AWS::ElasticBeanstalk::ApplicationVersion
@@ -168,22 +153,25 @@ Resources:
     Version: '1.0'
     Properties:
       ServiceToken:
-        Fn::ImportValue: !Sub '${InfrastructureStack}-createdatabase-index-ServiceToken'
+        Fn::ImportValue: !Sub '${InfrastructureStack}-createdatabase-handler-ServiceToken'
       DBName: !Ref 'RDSDatabaseName'
       DBUser: !Ref 'RDSUsername'
       DBPassword: !Ref 'RDSPassword'
   distribution:
     Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Retain
     Properties:
       Parameters:
-        StackName: !Ref 'StackName'
+        StackName: !Ref 'AWS::StackName'
         S3Bucket: !Ref 'S3Bucket'
         S3KeyPrefix: !Ref 'S3KeyPrefix'
         TrustedSigner: !Ref 'TrustedSigner'
         PriceClass: !Ref 'PriceClass'
         DerivativeBucket: !GetAtt 'transcodingpipeline.Outputs.DerivativeBucket'
-        HostedZoneName: !Ref 'HostedZoneName'
+        HostedZoneName:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-dns-PublicZoneName'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/cloudfront.yaml'
+      TimeoutInMinutes: '10'
   ConfigurationBucketAccess:
     Type: "AWS::S3::BucketPolicy"
     Properties:
@@ -195,15 +183,17 @@ Resources:
           - !Sub 'arn:aws:s3:::${ConfigurationBucket}'
           - !Sub 'arn:aws:s3:::${ConfigurationBucket}/*'
           Principal:
-          - AWS: !GetAtt 'EC2Role.Arn'
+            AWS:
+            - !GetAtt 'EC2Role.Arn'
           Action:
           - 's3:Get*'
           - 's3:List*'
   webapp:
     Type: AWS::CloudFormation::Stack
+    DependsOn: database
     Properties:
       Parameters:
-        StackName: !Ref 'StackName'
+        StackName: !Ref 'AWS::StackName'
         ApplicationName: !Ref 'HydraApplication'
         VersionLabel: !Ref 'HydraApplicationVersion'
         KeyName: !Ref 'KeyName'
@@ -266,9 +256,10 @@ Resources:
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/webapp.yaml'
   workers:
     Type: AWS::CloudFormation::Stack
+    DependsOn: database
     Properties:
       Parameters:
-        StackName: !Ref 'StackName'
+        StackName: !Ref 'AWS::StackName'
         ApplicationName: !Ref 'HydraApplication'
         VersionLabel: !Ref 'HydraApplicationVersion'
         KeyName: !Ref 'KeyName'
@@ -324,7 +315,6 @@ Resources:
         InitialUser: !Ref 'InitialUser'
         TranscodingPipeline: !GetAtt 'transcodingpipeline.Outputs.Pipeline'
         PipelineSNSTopic: !GetAtt 'transcodingpipeline.Outputs.PipelineSNSTopic'
-        EC2Role: !Ref 'EC2Role'
         CloudFrontHttp: !GetAtt 'distribution.Outputs.HTTP'
         CloudFrontRtmp: !GetAtt 'distribution.Outputs.RTMP'
         CloudFrontKey: !Sub 's3://${ConfigurationBucket}/cloudfront/${CloudFrontKeyFile}'
@@ -392,7 +382,9 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        StackName: !Ref 'StackName'
+        StackName: !Ref 'AWS::StackName'
+        S3Bucket: !Ref 'S3Bucket'
+        S3KeyPrefix: !Ref 'S3KeyPrefix'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/transcoder.yaml'
 Outputs:
   URL:

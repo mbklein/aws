@@ -1,6 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Hydra Base Stack
 Parameters:
+  StackName:
+    Type: String
+    Description: Name of the infrastructure stack (for tagging and naming)
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances
@@ -18,6 +21,8 @@ Parameters:
     Type: String
     Description: Existing Route53 zone; used to create a public DNS record for the
       web application
+    AllowedPattern: '^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,63}$'
+    ConstraintDescription: 'PublicZoneName must be a valid DNS zone WITHOUT a trailing dot'
   DatabaseUsername:
     Type: String
     Description: Database Root Username
@@ -108,9 +113,6 @@ Parameters:
     Type: Number
     Description: Maximum number of Zookeeper instances to launch
     Default: '6'
-  VpnFqdn:
-    Description: The fully-qualified hostname for the VPN server
-    Type: String
   VpnUser:
     Description: The username for the VPN user
     Type: String
@@ -151,7 +153,6 @@ Metadata:
     - Label:
         default: OpenVPN Configuration
       Parameters:
-      - VpnFqdn
       - VpnUser
       - VpnPassword
 Resources:
@@ -160,23 +161,23 @@ Resources:
     DeletionPolicy: Retain
     Properties:
       Parameters:
-        StackName: !Ref 'AWS::StackName'
+        StackName: !Ref 'StackName'
         KeyName: !Sub '${KeyName}'
-        HostedZoneName: !Sub '${AWS::StackName}.vpc.${PublicZoneName}'
+        HostedZoneName: !Sub '${StackName}.vpc.${PublicZoneName}'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/vpc.yaml'
   securitygroups:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Retain
     Properties:
       Parameters:
-        StackName: !Ref 'AWS::StackName'
+        StackName: !Ref 'StackName'
         VPC: !GetAtt 'vpc.Outputs.VPCID'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/securitygroups.yaml'
   zookeeper:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        StackName: !Ref 'AWS::StackName'
+        StackName: !Ref 'StackName'
         InstanceType: !Ref 'ZookeeperInstanceType'
         KeyName: !Sub '${KeyName}'
         SubnetID: !GetAtt 'vpc.Outputs.PrivateSubnets'
@@ -192,7 +193,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        StackName: !Ref 'AWS::StackName'
+        StackName: !Ref 'StackName'
         KeyName: !Sub '${KeyName}'
         SubnetID: !GetAtt 'vpc.Outputs.PrivateSubnets'
         SecurityGroups: !Sub '${securitygroups.Outputs.Fcrepo},${securitygroups.Outputs.Default}'
@@ -214,7 +215,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        StackName: !Ref 'AWS::StackName'
+        StackName: !Ref 'StackName'
         KeyName: !Sub '${KeyName}'
         HostedZoneName: !GetAtt 'vpc.Outputs.HostedZoneName'
         S3Bucket: !Ref 'S3BucketEB'
@@ -231,7 +232,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        StackName: !Ref 'AWS::StackName'
+        StackName: !Ref 'StackName'
         SubnetID: !GetAtt 'vpc.Outputs.PrivateSubnets'
         SecurityGroups: !GetAtt 'securitygroups.Outputs.Redis'
         InstanceType: !Ref 'RedisInstanceType'
@@ -253,18 +254,18 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        StackName: !Ref 'AWS::StackName'
+        StackName: !Ref 'StackName'
         S3Bucket: !Ref 'S3Bucket'
         S3KeyPrefix: !Ref 'S3KeyPrefix'
         Package: 'lambdaenvironment'
-        AllowedActions: 'lambda:*'
+        AllowedActions: 'lambda:*,ec2:*'
         Timeout: '10'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/lambdafunction.yaml'
   createschema:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        StackName: !Ref 'AWS::StackName'
+        StackName: !Ref 'StackName'
         S3Bucket: !Ref 'S3Bucket'
         S3KeyPrefix: !Ref 'S3KeyPrefix'
         Package: 'createdatabase'
@@ -274,7 +275,7 @@ Resources:
         Timeout: '60'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/lambdafunction.yaml'
   createschemaconfig:
-    Type: Custom::DatabaseSchema
+    Type: Custom::LambdaEnvironmentConfiguration
     Version: '1.0'
     Properties:
       ServiceToken: !GetAtt 'lambdaenv.Outputs.ServiceToken'
@@ -297,31 +298,30 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        Domain: !Sub '${AWS::StackName}.${PublicZoneName}'
-        HostedZoneName: !Ref 'PublicZoneName'
+        Domain: !Sub '${StackName}.${PublicZoneName}'
+        HostedZoneName: !Sub '${PublicZoneName}'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/mail.yaml'
   openvpn:
     Type: AWS::CloudFormation::Stack
     Properties:
       Parameters:
-        StackName: !Ref 'AWS::StackName'
+        StackName: !Ref 'StackName'
         KeyName: !Sub '${KeyName}'
         SubnetID: !Select ['0', !Split [',', !GetAtt 'vpc.Outputs.PublicSubnets']]
         SecurityGroups: !Sub '${securitygroups.Outputs.Bastion},${securitygroups.Outputs.OpenVPN}'
-        HostedZoneName: !Sub '${AWS::StackName}.${PublicZoneName}'
-        VpnFqdn: !Ref 'VpnFqdn'
+        HostedZoneName: !Sub '${StackName}.${PublicZoneName}'
         VpnUser: !Ref 'VpnUser'
         VpnPassword: !Ref 'VpnPassword'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/openvpn.yaml'
   PublicDNS:
     Type: AWS::Route53::HostedZone
     Properties:
-      Name: !Sub '${AWS::StackName}.${PublicZoneName}'
+      Name: !Sub '${StackName}.${PublicZoneName}.'
   PublicDNSNameServers:
     Type: AWS::Route53::RecordSet
     Properties:
-      Name: !Sub '${AWS::StackName}.${PublicZoneName}'
-      HostedZoneName: !Ref 'PublicZoneName'
+      Name: !Sub '${StackName}.${PublicZoneName}.'
+      HostedZoneName: !Sub '${PublicZoneName}.'
       Type: NS
       TTL: '900'
       ResourceRecords: !GetAtt 'PublicDNS.NameServers'
@@ -331,16 +331,16 @@ Outputs:
     Value: !GetAtt 'openvpn.Outputs.URL'
   PublicZoneName:
     Description: Name of the public subzone
-    Value: !Sub '${AWS::StackName}.${PublicZoneName}'
+    Value: !Sub '${StackName}.${PublicZoneName}'
     Export:
-      Name: !Sub '${AWS::StackName}-dns-PublicZoneName'
+      Name: !Sub '${StackName}-dns-PublicZoneName'
   DatabaseAddress:
     Description: Postgres endpoint address
     Value: !GetAtt 'database.Outputs.EndpointAddress'
     Export:
-      Name: !Sub '${AWS::StackName}-db-EndpointAddress'
+      Name: !Sub '${StackName}-db-EndpointAddress'
   DatabasePort:
     Description: Postgres endpoint port
     Value: !GetAtt 'database.Outputs.EndpointPort'
     Export:
-      Name: !Sub '${AWS::StackName}-db-EndpointPort'
+      Name: !Sub '${StackName}-db-EndpointPort'

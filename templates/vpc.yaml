@@ -168,7 +168,7 @@ Resources:
   DNS:
     Type: AWS::Route53::HostedZone
     Properties:
-      Name: !Ref 'HostedZoneName'
+      Name: !Sub '${HostedZoneName}.'
       VPCs:
       - VPCId: !Ref 'VPC'
         VPCRegion: !Ref 'AWS::Region'

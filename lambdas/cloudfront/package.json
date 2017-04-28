@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "cfn-wrapper": "latest",
-    "aws-sdk": "latest"
+    "aws-sdk": "latest",
+    "uuid": "latest"
   },
   "description": "AWS Lambda functions to create CloudFront streaming distributions.",
   "directories": {},

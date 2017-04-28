@@ -12,7 +12,7 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       Name: !Ref 'Domain'
-      HostedZoneName: !Ref 'HostedZoneName'
+      HostedZoneName: !Sub '${HostedZoneName}.'
       Type: MX
       TTL: '6000'
       ResourceRecords:
@@ -118,7 +118,7 @@ Resources:
     Type: Custom::HostedZone
     Properties:
       ServiceToken: !GetAtt 'HostedZoneOutputs.Arn'
-      HostedZoneName: !Ref 'HostedZoneName'
+      HostedZoneName: !Sub '${HostedZoneName}'
   HostedZoneOutputs:
     Type: AWS::Lambda::Function
     Properties:

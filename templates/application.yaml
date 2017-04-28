@@ -144,7 +144,7 @@ Resources:
         PrivateSubnets: !Join [',', !Ref 'PrivateSubnets']
         SecurityGroups: !Join [',', !Ref 'SecurityGroups']
         LBSecurityGroups: !Join [',', !Ref 'LBSecurityGroups']
-        HostedZoneName: !Ref 'HostedZoneName'
+        HostedZoneName: !Sub '${HostedZoneName}'
         SecretKeyBase: !Ref 'SecretKeyBase'
         FcrepoUrl: !Ref 'FcrepoUrl'
         SolrUrl: !Ref 'SolrUrl'
@@ -182,7 +182,7 @@ Resources:
         PrivateSubnets: !Join [',', !Ref 'PrivateSubnets']
         SecurityGroups: !Join [',', !Ref 'SecurityGroups']
         LBSecurityGroups: !Join [',', !Ref 'LBSecurityGroups']
-        HostedZoneName: !Ref 'HostedZoneName'
+        HostedZoneName: !Sub '${HostedZoneName}'
         SecretKeyBase: !Ref 'SecretKeyBase'
         FcrepoUrl: !Ref 'FcrepoUrl'
         SolrUrl: !Ref 'SolrUrl'

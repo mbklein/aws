@@ -11,46 +11,17 @@ Parameters:
     Description: S3 prefix to deployment artifacts
     Type: String
 Resources:
-  LambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Path: /
-      Policies:
-      - PolicyName: !Sub '${AWS::StackName}-cf-elastic-transcoder-pipeline'
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-            Resource: arn:aws:logs:*:*:*
-          - Effect: Allow
-            Action:
-            - elastictranscoder:*
-            - iam:PassRole
-            Resource:
-            - "*"
   PipelineFunction:
-    Type: AWS::Lambda::Function
+    Type: AWS::CloudFormation::Stack
     Properties:
-      Code:
+      Parameters:
+        StackName: !Ref 'AWS::StackName'
         S3Bucket: !Ref 'S3Bucket'
-        S3Key: !Sub 'cloudformation/${S3KeyPrefix}/lambdas/transcoding_pipeline.zip'
-      Handler: index.handler
-      Runtime: nodejs4.3
-      Timeout: '10'
-      Role: !GetAtt 'LambdaExecutionRole.Arn'
+        S3KeyPrefix: !Ref 'S3KeyPrefix'
+        Package: 'transcodingpipeline'
+        AllowedActions: 'elastictranscoder:*'
+        Timeout: '60'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/lambdafunction.yaml'
   MasterfileBucket:
     Type: AWS::S3::Bucket
 #    DeletionPolicy: Retain
@@ -118,7 +89,7 @@ Resources:
     Type: Custom::ElasticTranscoderPipeline
     Version: '1.0'
     Properties:
-      ServiceToken: !GetAtt 'PipelineFunction.Arn'
+      ServiceToken: !GetAtt 'PipelineFunction.Outputs.ServiceToken'
       Name: !Sub '${StackName}-transcoding-pipeline'
       Role: !GetAtt 'PipelineRole.Arn'
       InputBucket: !Ref 'MasterfileBucket'

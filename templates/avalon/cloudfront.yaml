@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Avalon CloudFront Origin Access Identity
+Description: CloudFront HTTP and RTMP Distributions for Avalon
 Parameters:
   StackName:
     Type: String
@@ -51,30 +51,34 @@ Resources:
     Type: Custom::CloudFrontOAI
     Version: '1.0'
     DependsOn: "OAIFunction"
+    DeletionPolicy: Retain
     Properties:
-      ServiceToken: !GetAtt 'OAIFunction.Outputs.Arn'
+      ServiceToken: !GetAtt 'OAIFunction.Outputs.ServiceToken'
       Name: !Sub '${StackName}-cloudfront-oai'
   RTMPDistribution:
     Type: Custom::CloudFrontDistribution
     Version: '1.0'
+    DeletionPolicy: Retain
+    DependsOn: DerivativeBucketAccess
     Properties:
-      ServiceToken: !GetAtt 'RTMPFunction.Outputs.Arn'
+      ServiceToken: !GetAtt 'RTMPFunction.Outputs.ServiceToken'
       Name: !Sub '${StackName}-rtmp-distribution'
       PriceClass: !Ref 'PriceClass'
-      DerivativeBucket: !Ref 'DerivativeBucket'
+      DerivativeBucket: !Sub '${DerivativeBucket}.s3.amazonaws.com'
       TrustedSigner: !Ref 'TrustedSigner'
       CloudFrontRtmp: !Sub 'rtmpstream.${HostedZoneName}'
-      CloudFrontOAI: !Ref 'CloudFrontOAI'
+      CloudFrontOAI: !GetAtt 'CloudFrontOAI.Id'
   HTTPDistribution:
     Type: AWS::CloudFront::Distribution
-    DependsOn: "CloudFrontOAI"
+    DependsOn: DerivativeBucketAccess
+    DeletionPolicy: Retain
     Properties:
       DistributionConfig:
         Origins:
-        - DomainName: !Ref 'DerivativeBucket'
+        - DomainName: !Sub '${DerivativeBucket}.s3.amazonaws.com'
           Id: !Sub '${StackName}-derivative-origin-hls'
           S3OriginConfig:
-            OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI}'
+            OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI.Id}'
         Enabled: 'true'
         Comment: Avalon HTTP distribution
         DefaultRootObject: index.html
@@ -108,26 +112,27 @@ Resources:
         Statement:
         - Effect: "Allow"
           Resource:
-          - !Sub 'arn:aws:s3:::${DerivativeBucket}'
           - !Sub 'arn:aws:s3:::${DerivativeBucket}/*'
-          Principal: !GetAtt 'CloudFrontOAI.S3CanonicalUserId'
+          Principal:
+            CanonicalUser: !GetAtt 'CloudFrontOAI.S3CanonicalUserId'
           Action:
-          - 's3:Get*'
-          - 's3:List*'
+          - 's3:GetObject'
   HTTPRecordSet:
     Type: "AWS::Route53::RecordSet"
     Properties:
-      Name: !Sub 'httpstream.${HostedZoneName}'
-      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Sub 'httpstream.${HostedZoneName}.'
+      HostedZoneName: !Sub '${HostedZoneName}.'
       Type: CNAME
+      TTL: '900'
       ResourceRecords:
         - !GetAtt 'HTTPDistribution.DomainName'
   RTMPRecordSet:
     Type: "AWS::Route53::RecordSet"
     Properties:
-      Name: !Sub 'rtmpstream.${HostedZoneName}'
-      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Sub 'rtmpstream.${HostedZoneName}.'
+      HostedZoneName: !Sub '${HostedZoneName}.'
       Type: CNAME
+      TTL: '900'
       ResourceRecords:
         - !GetAtt 'RTMPDistribution.DomainName'
 Outputs:
@@ -136,7 +141,7 @@ Outputs:
     Value: !Ref 'CloudFrontOAI'
   RTMP:
     Description: CloudFront RTMP Distribution
-    Value: !Ref 'RTMPRecordSet'
+    Value: !Sub 'rtmp://${RTMPRecordSet}/'
   HTTP:
     Description: CloudFront RTMP Distribution
-    Value: !Ref 'HTTPRecordSet'
+    Value: !Sub 'http://${HTTPRecordSet}/'
