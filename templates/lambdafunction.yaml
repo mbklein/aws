@@ -20,6 +20,10 @@ Parameters:
   AllowedActions:
     Type: CommaDelimitedList
     Description: A list of actions this lambda can perform
+  AllowedResources:
+    Type: CommaDelimitedList
+    Description: A list of resources this lambda can act on
+    Default: '*'
   SecurityGroups:
     Type: CommaDelimitedList
     Description: A list of security group ids, such as sg-a123fd85
@@ -59,8 +63,7 @@ Resources:
           Statement:
           - Effect: Allow
             Action: !Ref 'AllowedActions'
-            Resource:
-            - '*'
+            Resource: !Ref 'AllowedResources'
           - Effect: Allow
             Action:
             - logs:CreateLogGroup

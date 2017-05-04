@@ -3,14 +3,22 @@
 S3_BUCKET=${S3_BUCKET:-nul-repo-deploy}
 S3_KEY=${S3_KEY:-infrastructure/current}
 
-cd lambdas
-for f in `find . -type d -depth 1`; do
-  output=$(echo $f | tr -dc '[:alnum:]-:')
-  cd $f
+build_lambda () {
+  output=$(echo $1 | tr -dc '[:alnum:]-:')
+  cd $1
   npm update
   zip -r ../$output.zip .
   cd ..
-done
+}
+
+cd lambdas
+if [ -z "$1" ]; then
+  for f in `find . -type d -depth 1`; do
+    build_lambda $f
+  done
+else
+  build_lambda $1
+fi
 cd ..
 
-aws s3 sync $@ lambdas s3://${S3_BUCKET}/cloudformation/${S3_KEY}/lambdas --exclude '*' --include '*.zip'
+aws s3 sync lambdas s3://${S3_BUCKET}/cloudformation/${S3_KEY}/lambdas --exclude '*' --include '*.zip'
