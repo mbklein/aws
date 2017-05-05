@@ -368,7 +368,7 @@ Resources:
             - elastictranscoder:List*
             - elastictranscoder:Read*
             Resource:
-            - arn:aws:elastictranscoder:us-east-1:845225713889:pipeline/1493338287078-cclczy
+            - !GetAtt 'transcodingpipeline.Outputs.PipelineArn'
             Effect: Allow
           - Action:
             - elastictranscoder:ListPresets
@@ -414,7 +414,7 @@ Resources:
         StackName: !Ref 'AWS::StackName'
         S3Bucket: !Ref 'S3Bucket'
         S3KeyPrefix: !Ref 'S3KeyPrefix'
-        BatchIngestFunction: !GetAtt 'BatchIngestFunction.Arn'
+        BatchIngestFunction: !GetAtt 'BatchIngestFunction.Outputs.ServiceToken'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/transcoder.yaml'
   BatchIngestFunction:
     Type: AWS::CloudFormation::Stack
