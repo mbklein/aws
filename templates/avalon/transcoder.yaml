@@ -4,6 +4,10 @@ Parameters:
   StackName:
     Type: String
     Description: Name of the application stack (for tagging and naming)
+  BucketSuffix:
+    Type: String
+    Description: Prefix to use for MasterFile and Derivative buckets
+    Default: 'cfx3wj9'
   S3Bucket:
     Type: String
     Description: S3 bucket to the cfn deployment artifacts
@@ -27,24 +31,38 @@ Resources:
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/lambdafunction.yaml'
   MasterfileBucket:
     Type: AWS::S3::Bucket
-#    DeletionPolicy: Retain
+    DependsOn: NotificationLambdaPolicy
+    DeletionPolicy: Retain
     Properties:
+      BucketName: !Sub '${StackName}-masterfiles-${BucketSuffix}'
       CorsConfiguration:
         CorsRules:
         - AllowedOrigins: ['*']
           AllowedMethods: ["GET", "POST", "PUT"]
       NotificationConfiguration:
         LambdaConfigurations:
-        - Event: 'ObjectCreatedByPut'
+        - Event: 's3:ObjectCreated:Put'
           Function: !Ref 'BatchIngestFunction'
           Filter: { S3Key: { Rules: [ { Name: 'prefix', Value: 'dropbox/' }, { Name: 'suffix', Value: '.xlsx' } ] } }
-        - Event: 'ObjectCreatedByPut'
+        - Event: 's3:ObjectCreated:Post'
+          Function: !Ref 'BatchIngestFunction'
+          Filter: { S3Key: { Rules: [ { Name: 'prefix', Value: 'dropbox/' }, { Name: 'suffix', Value: '.xlsx' } ] } }
+        - Event: 's3:ObjectCreated:Put'
           Function: !Ref 'BatchIngestFunction'
           Filter: { S3Key: { Rules: [ { Name: 'prefix', Value: 'dropbox/' }, { Name: 'suffix', Value: '.xls' } ] } }
-        - Event: 'ObjectCreatedByPut'
+        - Event: 's3:ObjectCreated:Post'
+          Function: !Ref 'BatchIngestFunction'
+          Filter: { S3Key: { Rules: [ { Name: 'prefix', Value: 'dropbox/' }, { Name: 'suffix', Value: '.xls' } ] } }
+        - Event: 's3:ObjectCreated:Put'
           Function: !Ref 'BatchIngestFunction'
           Filter: { S3Key: { Rules: [ { Name: 'prefix', Value: 'dropbox/' }, { Name: 'suffix', Value: '.csv' } ] } }
-        - Event: 'ObjectCreatedByPut'
+        - Event: 's3:ObjectCreated:Post'
+          Function: !Ref 'BatchIngestFunction'
+          Filter: { S3Key: { Rules: [ { Name: 'prefix', Value: 'dropbox/' }, { Name: 'suffix', Value: '.csv' } ] } }
+        - Event: 's3:ObjectCreated:Put'
+          Function: !Ref 'BatchIngestFunction'
+          Filter: { S3Key: { Rules: [ { Name: 'prefix', Value: 'dropbox/' }, { Name: 'suffix', Value: '.ods' } ] } }
+        - Event: 's3:ObjectCreated:Post'
           Function: !Ref 'BatchIngestFunction'
           Filter: { S3Key: { Rules: [ { Name: 'prefix', Value: 'dropbox/' }, { Name: 'suffix', Value: '.ods' } ] } }
   NotificationLambdaPolicy:
@@ -53,10 +71,12 @@ Resources:
       FunctionName: !Ref 'BatchIngestFunction'
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
-      SourceArn: !Sub 'arn:aws:s3:::${MasterfileBucket}'
+      SourceArn: !Sub 'arn:aws:s3:::${StackName}-masterfiles-${BucketSuffix}'
   DerivativeBucket:
     Type: AWS::S3::Bucket
-#    DeletionPolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Sub '${StackName}-derivatives-${BucketSuffix}'
   PipelineNotification:
     Type: AWS::SNS::Topic
     Properties:
