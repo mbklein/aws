@@ -204,10 +204,6 @@
     "ParameterValue": "hybox-admin"
   },
   {
-    "ParameterKey": "VpnFqdn",
-    "ParameterValue": "vpn.hybox.hydrainabox.org"
-  },
-  {
     "ParameterKey": "VpnPassword",
     "ParameterValue": ""
   }
