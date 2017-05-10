@@ -17,6 +17,9 @@ Parameters:
   BatchIngestFunction:
     Description: ARN of the batch ingest notification lambda function
     Type: String
+  GlacierTransitionInDays:
+    Type: String
+    Description: Number of days before transitioning Masterfiles to Glacier storage class
 Resources:
   PipelineFunction:
     Type: AWS::CloudFormation::Stack
@@ -39,6 +42,13 @@ Resources:
         CorsRules:
         - AllowedOrigins: ['*']
           AllowedMethods: ["GET", "POST", "PUT"]
+      LifecycleConfiguration:
+        Rules:
+        - Id: MasterfileGlacierRule
+          Status: Enabled
+          Transitions:
+          - StorageClass: GLACIER
+            TransitionInDays: !Ref 'GlacierTransitionInDays'      
       NotificationConfiguration:
         LambdaConfigurations:
         - Event: 's3:ObjectCreated:Put'

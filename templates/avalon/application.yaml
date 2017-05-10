@@ -125,6 +125,9 @@ Parameters:
   PriceClass:
     Type: String
     Description: Price class of CloudFront distribution
+  GlacierTransitionInDays:
+    Type: String
+    Description: Number of days before transitioning Masterfiles to Glacier storage class
 Conditions:
   CreateContinuousDeployment: !Equals [!Ref 'ContinuousDeployment', 'true']
 Resources:
@@ -414,6 +417,7 @@ Resources:
         StackName: !Ref 'AWS::StackName'
         S3Bucket: !Ref 'S3Bucket'
         S3KeyPrefix: !Ref 'S3KeyPrefix'
+        GlacierTransitionInDays: !Ref 'GlacierTransitionInDays'
         BatchIngestFunction: !GetAtt 'BatchIngestFunction.Outputs.ServiceToken'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/avalon/transcoder.yaml'
   BatchIngestFunction:
