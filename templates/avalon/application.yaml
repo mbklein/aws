@@ -376,6 +376,7 @@ Resources:
           - Action:
             - elastictranscoder:ListPresets
             - elastictranscoder:ReadPreset
+            - elastictranscoder:CreatePreset
             - elastictranscoder:ListJobs
             - elastictranscoder:CreateJob
             - elastictranscoder:ReadJob
