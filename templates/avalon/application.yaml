@@ -242,6 +242,8 @@ Resources:
         QueuePrefix: !Ref 'QueuePrefix'
         DefaultQueue: !Ref 'DefaultQueue'
         BeanstalkSNSTopic: !GetAtt 'slack.Outputs.BeanstalkSNSTopic'
+        BeanstalkServiceRole:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-BeanstalkServiceRole'
         InstanceType: !Ref 'WebappInstanceType'
         HealthReportingSystemType: !Ref 'WebappHealthReportingSystemType'
         IamInstanceProfile: !GetAtt 'EC2InstanceProfile.Arn'
@@ -309,6 +311,8 @@ Resources:
         DefaultQueue: !Ref 'DefaultQueue'
         DefaultQueueName: !GetAtt 'DefaultQueue.QueueName'
         BeanstalkSNSTopic: !GetAtt 'slack.Outputs.BeanstalkSNSTopic'
+        BeanstalkServiceRole:
+          Fn::ImportValue: !Sub '${InfrastructureStack}-BeanstalkServiceRole'
         IamInstanceProfile: !GetAtt 'EC2InstanceProfile.Arn'
         InstanceType: !Ref 'WorkerInstanceType'
         HealthReportingSystemType: !Ref 'WorkerHealthReportingSystemType'

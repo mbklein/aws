@@ -188,6 +188,7 @@ Resources:
         MaxSize: !Ref 'ZookeeperMaxSize'
         S3Bucket: !Ref 'S3BucketEB'
         S3Key: !Ref 'S3ZookeeperFilename'
+        BeanstalkServiceRole: !GetAtt 'BeanstalkServiceRole.Arn'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/zookeeper.yaml'
   fcrepo:
     Type: AWS::CloudFormation::Stack
@@ -227,6 +228,7 @@ Resources:
         MinSize: !Ref 'SolrCloudMinSize'
         MaxSize: !Ref 'SolrCloudMaxSize'
         InstanceType: !Ref 'SolrCloudInstanceType'
+        BeanstalkServiceRole: !GetAtt 'BeanstalkServiceRole.Arn'
       TemplateURL: !Sub 'https://s3.amazonaws.com/${S3Bucket}/cloudformation/${S3KeyPrefix}/templates/solr.yaml'
   redis:
     Type: AWS::CloudFormation::Stack
@@ -325,6 +327,22 @@ Resources:
       Type: NS
       TTL: '900'
       ResourceRecords: !GetAtt 'PublicDNS.NameServers'
+  BeanstalkServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${StackName}-elasticbeanstalk-service-role'
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - elasticbeanstalk.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkEnhancedHealth
+      - arn:aws:iam::aws:policy/service-role/AWSElasticBeanstalkService
 Outputs:
   VPN:
     Description: URL for the OpenVPN server
@@ -344,3 +362,8 @@ Outputs:
     Value: !GetAtt 'database.Outputs.EndpointPort'
     Export:
       Name: !Sub '${StackName}-db-EndpointPort'
+  BeanstalkServiceRole:
+    Description: Allows Elastic Beanstalk to create and manage AWS resources on your behalf.
+    Value: !GetAtt 'BeanstalkServiceRole.Arn'
+    Export:
+      Name: !Sub '${StackName}-BeanstalkServiceRole'

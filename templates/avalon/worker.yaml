@@ -122,6 +122,9 @@ Parameters:
     NoEcho: 'true'
     Type: String
     Description: The keypair ID of the CloudFront signing key
+  BeanstalkServiceRole:
+    Type: String
+    Description: Allows Elastic Beanstalk to create and manage AWS resources on your behalf.
 Resources:
   WorkerEnvironment:
     Type: AWS::ElasticBeanstalk::Environment
@@ -323,7 +326,7 @@ Resources:
         Value: /
       - Namespace: aws:elasticbeanstalk:environment
         OptionName: ServiceRole
-        Value: aws-elasticbeanstalk-service-role
+        Value: !Ref 'BeanstalkServiceRole'
       - Namespace: aws:elasticbeanstalk:sns:topics
         OptionName: Notification Topic ARN
         Value: !Ref 'BeanstalkSNSTopic'

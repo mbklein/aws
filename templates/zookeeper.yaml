@@ -47,6 +47,9 @@ Parameters:
   LBSecurityGroups:
     Type: List<AWS::EC2::SecurityGroup::Id>
     Description: A list of security groups, such as sg-a123fd85.
+  BeanstalkServiceRole:
+    Type: String
+    Description: Allows Elastic Beanstalk to create and manage AWS resources on your behalf.
 Resources:
   ZKSharedConfigsBucket:
     Type: AWS::S3::Bucket
@@ -193,7 +196,7 @@ Resources:
         Value: HTTP:8181/exhibitor/v1/ui/index.html
       - Namespace: aws:elasticbeanstalk:environment
         OptionName: ServiceRole
-        Value: aws-elasticbeanstalk-service-role
+        Value: !Ref 'BeanstalkServiceRole'
       - Namespace: aws:elasticbeanstalk:managedactions:platformupdate
         OptionName: UpdateLevel
         Value: minor
